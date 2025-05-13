@@ -8,31 +8,30 @@ use Base3\Api\IPlugin;
 use Base3\Database\Api\IDatabase;
 use Pimple\Container;
 
-class Base3IliasPlugin implements IPlugin
-{
-    public function __construct(private readonly IContainer $container) {}
+class Base3IliasPlugin implements IPlugin {
+    
+	public function __construct(private readonly IContainer $container) {}
 
-    // Implementation of IBase
+	// Implementation of IBase
 
-    public function getName(): string {
-        return strtolower($this->getClassName());
-    }
+	public function getName(): string {
+		return strtolower($this->getClassName());
+	}
 
-    // Implementation of IPlugin
+	// Implementation of IPlugin
 
-    public function init(): void
-    {
-        global $DIC;
-        $this->container
-            ->set($this->getName(), $this, IContainer::SHARED)
-            ->set(Container::class, $DIC, IContainer::SHARED)
-	    ->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
-            ->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
-    }
+	public function init(): void {
+		global $DIC;
+		$this->container
+			->set($this->getName(), $this, IContainer::SHARED)
+			->set(Container::class, $DIC, IContainer::SHARED)
+			->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
+			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
+	}
 
-    // Private methods
+	// Private methods
 
-    private function getClassName(): string {
-        return (new \ReflectionClass($this))->getShortName();
-    }
+	private function getClassName(): string {
+		return (new \ReflectionClass($this))->getShortName();
+	}
 }
