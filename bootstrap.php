@@ -3,7 +3,6 @@
 use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
-use Base3\Configuration\Api\IConfiguration;
 use Base3\Core\Autoloader;
 use Base3\Core\PluginClassMap;
 use Base3\Core\ServiceLocator;
@@ -42,8 +41,6 @@ ServiceLocator::useInstance($servicelocator);
 $servicelocator
     ->set('servicelocator', $servicelocator, IContainer::SHARED)
     ->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
-    ->set('configuration', new Base3IliasConfiguration, IContainer::SHARED)
-    ->set(IConfiguration::class, 'configuration', IContainer::ALIAS)
     ->set('classmap', new PluginClassMap($servicelocator), IContainer::SHARED)
     ->set(IClassMap::class, 'classmap', IContainer::ALIAS)
     ->set(IServiceSelector::class, StandardServiceSelector::getInstance(), ServiceLocator::SHARED);

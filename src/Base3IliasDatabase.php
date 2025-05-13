@@ -14,16 +14,14 @@ class Base3IliasDatabase implements IDatabase {
 	}
 
 	public function connect() {
-		// ILIAS-Datenbank wird über DIC automatisch verbunden
 	}
 
 	public function connected() {
-		// Kein direkter Check verfügbar – du kannst aber bei Bedarf mehr prüfen
-		return $this->db !== null;
+		global $DIC;
+		return $DIC != null && $DIC->database() != null;
 	}
 
 	public function disconnect() {
-		// ILIAS schließt die Verbindung selbst, kein expliziter Disconnect vorgesehen
 	}
 
 	public function nonQuery($query) {
@@ -73,7 +71,14 @@ class Base3IliasDatabase implements IDatabase {
 	}
 
 	public function escape($str) {
-		return $this->db->quote($str, "text");
+		$str = (string)$str;
+		$str = str_replace(
+			["\\",   "\x00", "\n",  "\r",  "'",   '"',  "\x1a"],
+			["\\\\", "\\0", "\\n", "\\r", "\\'", '\\"', "\\Z"],
+			$str
+		);
+
+		return $str;
 	}
 
 	public function isError() {

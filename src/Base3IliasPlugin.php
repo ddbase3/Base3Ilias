@@ -5,7 +5,10 @@ namespace Base3Ilias;
 use Base3\Api\IAssetResolver;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
+use Base3\Configuration\Api\IConfiguration;
 use Base3\Database\Api\IDatabase;
+use Base3\Accesscontrol\Api\IAccesscontrol;
+use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
 use Pimple\Container;
 
 class Base3IliasPlugin implements IPlugin {
@@ -26,6 +29,11 @@ class Base3IliasPlugin implements IPlugin {
 			->set($this->getName(), $this, IContainer::SHARED)
 			->set(Container::class, $DIC, IContainer::SHARED)
 			->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
+			->set('configuration', new Base3IliasConfiguration($this->container->get(IDatabase::class)), IContainer::SHARED)
+			->set(IConfiguration::class, 'configuration', IContainer::ALIAS)
+                        ->set('authentications', [ fn() => new Base3IliasAuth ])
+                        ->set('accesscontrol', new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
+			->set(IAccesscontrol::class, 'accesscontrol', IContainer::ALIAS)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
 	}
 
