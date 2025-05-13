@@ -21,22 +21,31 @@ class Base3Ilias implements Component {
 		array | \ArrayAccess &$internal,
 	): void {
 
-		$contribute[PublicAsset::class] = fn() => new Endpoint($this, 'base3.php');
+		$this->out();
+		$this->out('-- BASE3 ILIAS Integration --------------------------------');
+		$this->out();
+
+		$endpoint = 'base3.php';
+		$this->out('Deploy endpoint: ' . $endpoint);
+		$contribute[PublicAsset::class] = fn() => new Endpoint($this, $endpoint);
 	
-		$this->deployAssets();
+		$this->out();
+
+		$this->deployAssets($contribute);
+
+		$this->out();
+		$this->out('-----------------------------------------------------------');
+		$this->out();
 	}
 
 	/**
 	 * Deploy all Base3 plugin assets to public/components/Base3/[PluginName]
-	 * Use Base3IliasAssetResolver for getting target URLs.
+	 * Later use Base3IliasAssetResolver for getting target URLs.
 	 */
-	private function deployAssets() {
+	private function deployAssets(array | \ArrayAccess $contribute) {
 		$pluginBase = dirname(__DIR__, 1);
-
-		$this->out();
-		$this->out('-- BASE3 ILIAS Integration --------------------------------');
-
 		$this->out('Plugin base dir: ' . $pluginBase);
+
 		foreach (glob($pluginBase . '/*', GLOB_ONLYDIR) as $pluginPath) {
 			$pluginName = basename($pluginPath);
 			$this->out('* Plugin: ' . $pluginName);
@@ -47,15 +56,12 @@ class Base3Ilias implements Component {
 				continue;
 			}
 
-			$this->out('  - deploy assets');
 			$source = "components/Base3/" . $pluginName . "/assets";
 			$target = "components/Base3/" . $pluginName;
+			$this->out('  - deploy ' . $source . ' => ' . $target);
 			$asset = new Base3IliasPublicAsset($source, $target);
 			$contribute[PublicAsset::class] = static fn() => $asset;
 		}
-
-		$this->out('-----------------------------------------------------------');
-		$this->out();
 	}
 
 	private function out($str = '') {
