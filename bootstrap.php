@@ -12,8 +12,7 @@ use Base3\ServiceSelector\Standard\StandardServiceSelector;
 use Base3Ilias\Base3IliasConfiguration;
 use XapiProxy\ilInitialisation;
 
-// ilContext::init(ilContext::CONTEXT_REST);
-
+ilContext::init(ilContext::CONTEXT_REST);
 ilInitialisation::initILIAS();
 
 /* Debug mode - 0: aus, 1: an, ggfs noch höhere Stufen? */

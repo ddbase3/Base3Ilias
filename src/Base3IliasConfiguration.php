@@ -12,7 +12,11 @@ class Base3IliasConfiguration implements IConfiguration
         // TODO config
         if ($configuration == 'base') return [
             'url' => 'https://ddahme.qualitus.net/ilias10/public/',
-            'intern' => ''
+	    'intern' => ''
+	];
+        if ($configuration == 'manager') return [
+            'stdscope' => 'others',
+            'layout' => 'simple'
         ];
         return [];
     }

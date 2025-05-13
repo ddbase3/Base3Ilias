@@ -2,6 +2,7 @@
 
 namespace Base3Ilias;
 
+use Base3\Api\IAssetResolver;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
 use Base3\Database\Api\IDatabase;
@@ -25,7 +26,8 @@ class Base3IliasPlugin implements IPlugin
         $this->container
             ->set($this->getName(), $this, IContainer::SHARED)
             ->set(Container::class, $DIC, IContainer::SHARED)
-            ->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED);
+	    ->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
+            ->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
     }
 
     // Private methods
