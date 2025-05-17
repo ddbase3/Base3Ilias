@@ -7,6 +7,8 @@ use Base3\Core\Autoloader;
 use Base3\Core\PluginClassMap;
 use Base3\Core\ServiceLocator;
 use Base3\ServiceSelector\Api\IServiceSelector;
+use Base3Ilias\Base3IliasServiceLocator;
+use Base3Ilias\IliasPsrContainer;
 use Base3\ServiceSelector\Standard\StandardServiceSelector;
 use Base3Ilias\Base3IliasConfiguration;
 use XapiProxy\ilInitialisation;
@@ -36,18 +38,24 @@ require DIR_SRC . 'Core/Autoloader.php';
 Autoloader::register();
 
 /* service locator */
-$servicelocator = new ServiceLocator();
+$servicelocator = new Base3IliasServiceLocator();
+$servicelocator->setIliasContainer(new IliasPsrContainer($GLOBALS['DIC']));
 ServiceLocator::useInstance($servicelocator);
 $servicelocator
     ->set('servicelocator', $servicelocator, IContainer::SHARED)
     ->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
     ->set('classmap', new PluginClassMap($servicelocator), IContainer::SHARED)
     ->set(IClassMap::class, 'classmap', IContainer::ALIAS)
-    ->set(IServiceSelector::class, StandardServiceSelector::getInstance(), ServiceLocator::SHARED);
+    ->set(IServiceSelector::class, StandardServiceSelector::getInstance(), IContainer::SHARED);
 
 /* plugins */
 $plugins = $servicelocator->get(IClassMap::class)->getInstancesByInterface(IPlugin::class);
 foreach ($plugins as $plugin) $plugin->init();
+
+/* fill container with ILIAS services */
+global $DIC;
+$servicelocator->set(\ILIAS\DI\Container::class, $DIC, IContainer::SHARED);
+//$servicelocator->set(\ilDBPdoMySQLInnoDB::class, $DIC['ilDB'], IContainer::SHARED);
 
 /* go */
 $serviceselector = $servicelocator->get(IServiceSelector::class);
