@@ -14,7 +14,7 @@ use Base3Ilias\Base3IliasConfiguration;
 use XapiProxy\ilInitialisation;
 
 if (!isset($_REQUEST['noilias'])) {
-	// ilContext::init(ilContext::CONTEXT_REST);
+	if (isset($_REQUEST['rest'])) ilContext::init(ilContext::CONTEXT_REST);
 	ilInitialisation::initILIAS();
 }
 
