@@ -6,6 +6,8 @@ use Base3\Accesscontrol\AbstractAuth;
 
 class Base3IliasAuth extends AbstractAuth {
 
+	public function __construct(private readonly \ilAuthSession $ilAuthSession) {}
+
         // Implementation of IBase
 
         public function getName() {
@@ -14,8 +16,9 @@ class Base3IliasAuth extends AbstractAuth {
 
         // Implementation of IAuthentication
 
-        public function login() {
-		return 'test';
+	public function login() {
+		$userId = $this->ilAuthSession->getUserId();
+		return $userId == 13 ? null : $userId;
         }
 }
 
