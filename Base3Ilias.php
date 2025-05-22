@@ -5,6 +5,7 @@ namespace Base3;
 use ILIAS\Component\Component;
 use ILIAS\Component\Resource\PublicAsset;
 use ILIAS\Component\Resource\Endpoint;
+use Base3\Base3Ilias\Base3IliasPublicAsset;
 
 class Base3Ilias implements Component {
 
