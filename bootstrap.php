@@ -3,8 +3,10 @@
 use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
+use Base3\Api\IRequest;
 use Base3\Core\Autoloader;
 use Base3\Core\PluginClassMap;
+use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
 use Base3\ServiceSelector\Api\IServiceSelector;
 use Base3Ilias\Base3IliasServiceLocator;
@@ -13,14 +15,17 @@ use Base3\ServiceSelector\Standard\StandardServiceSelector;
 use Base3Ilias\Base3IliasConfiguration;
 use XapiProxy\ilInitialisation;
 
+/* save superglobals before they're gone */
+$request = Request::fromGlobals();
+
+/* ilias bootstrap */
 if (!isset($_REQUEST['noilias'])) {
 	switch (true) {
 		case isset($_REQUEST['rest']):
 			ilContext::init(ilContext::CONTEXT_REST);
 			break;
 		default:
-			// currently not good
-			// ilContext::init(ilContext::CONTEXT_WEB);
+			ilContext::init(ilContext::CONTEXT_WEB);
 	}
 	ilInitialisation::initILIAS();
 }
@@ -49,11 +54,12 @@ $servicelocator = new Base3IliasServiceLocator();
 $servicelocator->setIliasContainer(new IliasPsrContainer($GLOBALS['DIC']));
 ServiceLocator::useInstance($servicelocator);
 $servicelocator
-    ->set('servicelocator', $servicelocator, IContainer::SHARED)
-    ->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
-    ->set('classmap', new PluginClassMap($servicelocator), IContainer::SHARED)
-    ->set(IClassMap::class, 'classmap', IContainer::ALIAS)
-    ->set(IServiceSelector::class, StandardServiceSelector::getInstance(), IContainer::SHARED);
+	->set('servicelocator', $servicelocator, IContainer::SHARED)
+	->set(IRequest::class, $request, IContainer::SHARED)
+	->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
+	->set('classmap', new PluginClassMap($servicelocator), IContainer::SHARED)
+	->set(IClassMap::class, 'classmap', IContainer::ALIAS)
+	->set(IServiceSelector::class, StandardServiceSelector::getInstance(), IContainer::SHARED);
 
 /* plugins */
 $plugins = $servicelocator->get(IClassMap::class)->getInstancesByInterface(IPlugin::class);
