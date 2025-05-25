@@ -15,33 +15,33 @@ This component merges the capabilities of the BASE3 framework with the extensibi
 3. Inside this plugin folder, create a new `vendor/BASE3/` directory:
 
    ```bash
-   mkdir -p vendor/BASE3
+   mkdir -p component/Base3
    ```
 
-4. Clone the [BASE3 Framework](https://github.com/ddbase3/base3) into the `vendor/BASE3/` folder:
+4. Clone the [BASE3 Framework](https://github.com/ddbase3/base3) into the `component/Base3/` folder:
 
    ```bash
-   git clone https://github.com/ddbase3/base3.git vendor/BASE3/Framework
+   git clone https://github.com/ddbase3/base3.git component/Base3/Base3Framework
    ```
 
-5. Also place this component (`Base3Ilias`) into the same `vendor/BASE3/` directory if it's not already there.
+5. Also place this component (`Base3Ilias`) into the same `component/Base3/` directory if it's not already there.
 
    Final structure:
 
    ```
-   Base3Ilias/
-   └── vendor/
-       └── BASE3/
-           ├── Framework/
+   Ilias/
+   └── component/
+       └── Base3/
+           ├── Base3Framework/
            └── Base3Ilias/
    ```
 
-6. Activate the plugin via the ILIAS plugin administration interface.
+6. Eventually configuration
 
 ## Requirements
 
-- ILIAS version ≥ 7.0
-- PHP ≥ 8.1
+- ILIAS version ≥ 10.0
+- PHP ≥ 8.2
 - BASE3 Framework
 
 ## Purpose
