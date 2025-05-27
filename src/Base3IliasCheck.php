@@ -13,7 +13,7 @@ class Base3IliasCheck implements IOutput {
 
     // Implementation of IBase
 
-    public function getName() {
+    public static function getName(): string {
         return 'base3iliascheck';
     }
 

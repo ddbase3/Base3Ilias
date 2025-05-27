@@ -10,7 +10,7 @@ class Base3IliasAuth extends AbstractAuth {
 
         // Implementation of IBase
 
-        public function getName() {
+        public static function getName(): string {
                 return "base3iliasauth";
         }
 

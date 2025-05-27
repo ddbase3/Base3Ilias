@@ -13,7 +13,7 @@ class Base3IliasEndpoint implements IOutput {
 
 	// Implementation of IBase
 
-	public function getName() {
+	public static function getName(): string {
 		return 'base3iliasendpoint';
 	}
 
