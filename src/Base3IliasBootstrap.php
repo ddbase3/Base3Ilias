@@ -26,9 +26,6 @@ class Base3IliasBootstrap implements IBootstrap {
 
 	public function run(): void {
 
-		// save superglobals before they're gone
-		$request = Request::fromGlobals();
-
 		// ilias bootstrap
 		if (!isset($_REQUEST['noilias'])) {
 			switch (true) {
@@ -58,7 +55,7 @@ class Base3IliasBootstrap implements IBootstrap {
 		ServiceLocator::useInstance($servicelocator);
 		$servicelocator
 			->set('servicelocator', $servicelocator, IContainer::SHARED)
-			->set(IRequest::class, $request, IContainer::SHARED)
+			->set(IRequest::class, Request::fromGlobals(), IContainer::SHARED)
 			->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
 			->set('classmap', new PluginClassMap($servicelocator), IContainer::SHARED)
