@@ -26,7 +26,7 @@ class Base3IliasBootstrap implements IBootstrap {
 
 	public function run(): void {
 
-		// ilias bootstrap
+        // ilias bootstrap
 		if (!isset($_REQUEST['noilias'])) {
 			switch (true) {
 				case isset($_REQUEST['rest']):
