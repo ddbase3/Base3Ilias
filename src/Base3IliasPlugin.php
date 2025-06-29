@@ -7,10 +7,12 @@ use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\Database\Api\IDatabase;
+use Base3\Logger\Api\ILogger;
 use Base3\Accesscontrol\Api\IAccesscontrol;
 use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
 use Base3\Usermanager\Api\IUsermanager;
 use Pimple\Container;
+use ReflectionClass;
 
 class Base3IliasPlugin implements IPlugin {
     
@@ -31,9 +33,11 @@ class Base3IliasPlugin implements IPlugin {
 			->set($this->getName(), $this, IContainer::SHARED)
 			->set(Container::class, $GLOBALS['DIC'], IContainer::SHARED)
 			->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
-			->set('configuration', new Base3IliasConfiguration($this->container->get(IDatabase::class)), IContainer::SHARED)
+			->set('logger', fn() => new Base3IliasLogger, IContainer::SHARED)
+			->set(ILogger::class, 'logger', IContainer::ALIAS)
+			->set('configuration', fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set(IConfiguration::class, 'configuration', IContainer::ALIAS)
-                        ->set('authentications', [ fn() => new Base3IliasAuth($this->container->get('ilAuthSession')) ])
+                        ->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
                         ->set('accesscontrol', new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
 			->set(IAccesscontrol::class, 'accesscontrol', IContainer::ALIAS)
 			->set('usermanager', fn() => new Base3IliasUsermanager, IContainer::SHARED)
@@ -44,6 +48,6 @@ class Base3IliasPlugin implements IPlugin {
 	// Private methods
 
 	private function getClassName(): string {
-		return (new \ReflectionClass($this))->getShortName();
+		return (new ReflectionClass($this))->getShortName();
 	}
 }
