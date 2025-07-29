@@ -10,6 +10,8 @@ use Base3\Database\Api\IDatabase;
 use Base3\Logger\Api\ILogger;
 use Base3\Accesscontrol\Api\IAccesscontrol;
 use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
+use Base3\Middleware\Session\SessionMiddleware;
+use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
 use Base3\Usermanager\Api\IUsermanager;
 use Pimple\Container;
 use ReflectionClass;
@@ -40,6 +42,10 @@ class Base3IliasPlugin implements IPlugin {
                         ->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
                         ->set('accesscontrol', new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
 			->set(IAccesscontrol::class, 'accesscontrol', IContainer::ALIAS)
+			->set('middlewares', fn($c) => [
+				new SessionMiddleware($c->get(ISession::class)),
+				new AccesscontrolMiddleware($c->get(IAccesscontrol::class))
+			])
 			->set('usermanager', fn() => new Base3IliasUsermanager, IContainer::SHARED)
 			->set(IUsermanager::class, 'usermanager', IContainer::ALIAS)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
