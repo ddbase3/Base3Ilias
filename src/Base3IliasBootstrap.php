@@ -60,7 +60,7 @@ class Base3IliasBootstrap implements IBootstrap {
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
 			->set('classmap', new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set(IClassMap::class, 'classmap', IContainer::ALIAS)
-			->set(IServiceSelector::class, StandardServiceSelector::getInstance(), IContainer::SHARED);
+			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED);
 
 		// fill container with ILIAS services
 		$servicelocator->setIliasContainer(new IliasPsrContainer($GLOBALS['DIC']));
