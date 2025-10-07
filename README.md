@@ -10,27 +10,27 @@ This component merges the capabilities of the BASE3 framework with the extensibi
 
 1. Navigate to your ILIAS installation's `components/` directory.
 
-2. Inside this plugin folder, create a new `component/Base3/` directory:
+2. Inside this plugin folder, create a new `components/Base3/` directory:
 
    ```bash
-   mkdir -p component/Base3
+   mkdir -p components/Base3
    ```
 
 3. Clone this repository into a new subfolder `Base3Ilias`.
 
-4. Clone the [BASE3 Framework](https://github.com/ddbase3/Base3Framework) into the `component/Base3/` folder:
+4. Clone the [BASE3 Framework](https://github.com/ddbase3/Base3Framework) into the `components/Base3/` folder:
 
    ```bash
-   git clone https://github.com/ddbase3/Base3Framework.git component/Base3/Base3Framework
+   git clone https://github.com/ddbase3/Base3Framework.git components/Base3/Base3Framework
    ```
 
-5. Also place this component (`Base3Ilias`) into the same `component/Base3/` directory if it's not already there.
+5. Also place this component (`Base3Ilias`) into the same `components/Base3/` directory if it's not already there.
 
    Final structure:
 
    ```
    Ilias/
-   - component/
+   - components/
         - Base3/
             - Base3Framework/
             - Base3Ilias/
