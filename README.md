@@ -1,6 +1,6 @@
 # Base3Ilias
 
-**Base3Ilias** is a component that integrates the [BASE3 Framework](https://github.com/ddbase3/base3) into the [ILIAS Learning Management System](https://www.ilias.de). It serves as a bridge between the two systems, enabling seamless interoperability and leveraging the strengths of both platforms.
+**Base3Ilias** is a component that integrates the [BASE3 Framework](https://github.com/ddbase3/Base3Framework) into the [ILIAS Learning Management System](https://www.ilias.de). It serves as a bridge between the two systems, enabling seamless interoperability and leveraging the strengths of both platforms.
 
 ## Overview
 
@@ -8,20 +8,20 @@ This component merges the capabilities of the BASE3 framework with the extensibi
 
 ## Installation
 
-1. Navigate to your ILIAS installation's `Customizing/global/plugins/Services/Component/` directory.
+1. Navigate to your ILIAS installation's `components/` directory.
 
-2. Clone this repository into a new subfolder (e.g. `Base3Ilias`).
-
-3. Inside this plugin folder, create a new `vendor/BASE3/` directory:
+2. Inside this plugin folder, create a new `component/Base3/` directory:
 
    ```bash
    mkdir -p component/Base3
    ```
 
-4. Clone the [BASE3 Framework](https://github.com/ddbase3/base3) into the `component/Base3/` folder:
+3. Clone this repository into a new subfolder `Base3Ilias`.
+
+4. Clone the [BASE3 Framework](https://github.com/ddbase3/Base3Framework) into the `component/Base3/` folder:
 
    ```bash
-   git clone https://github.com/ddbase3/base3.git component/Base3/Base3Framework
+   git clone https://github.com/ddbase3/Base3Framework.git component/Base3/Base3Framework
    ```
 
 5. Also place this component (`Base3Ilias`) into the same `component/Base3/` directory if it's not already there.
@@ -51,10 +51,11 @@ The main goal of **Base3Ilias** is to allow developers to:
 - Use modern, modular PHP architecture inside ILIAS plugins
 - Share core logic between ILIAS and non-ILIAS projects using BASE3
 - Speed up development and maintain consistency across services
+- Usage of already developed BASE3 Plugins like AI tools, chatbot, agent system, reporting, crm, different api connectors and more
 
 ## License
 
-This project is open-source and available under the MIT License.
+This project is open-source and available under the GPL 3.0 License.
 
 ## Author
 
