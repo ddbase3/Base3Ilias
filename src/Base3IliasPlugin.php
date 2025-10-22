@@ -12,6 +12,8 @@ use Base3\Accesscontrol\Api\IAccesscontrol;
 use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
 use Base3\Middleware\Session\SessionMiddleware;
 use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
+use Base3\Session\Api\ISession;
+use Base3\Session\NoSession\NoSession;
 use Base3\Usermanager\Api\IUsermanager;
 use Pimple\Container;
 use ReflectionClass;
@@ -39,8 +41,10 @@ class Base3IliasPlugin implements IPlugin {
 			->set(ILogger::class, 'logger', IContainer::ALIAS)
 			->set('configuration', fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set(IConfiguration::class, 'configuration', IContainer::ALIAS)
-                        ->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
-                        ->set('accesscontrol', new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
+			->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
+			->set('session', fn($c) => new NoSession($c->get(IConfiguration::class)), IContainer::SHARED)
+			->set(ISession::class, 'session', IContainer::ALIAS)
+			->set('accesscontrol', new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
 			->set(IAccesscontrol::class, 'accesscontrol', IContainer::ALIAS)
 			->set('middlewares', fn($c) => [
 				new SessionMiddleware($c->get(ISession::class)),
