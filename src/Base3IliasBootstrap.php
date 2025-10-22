@@ -26,7 +26,10 @@ class Base3IliasBootstrap implements IBootstrap {
 
 	public function run(): void {
 
-        // ilias bootstrap
+		// handle request vars
+		$request = Request::fromGlobals();
+
+		// ilias bootstrap
 		if (!isset($_REQUEST['noilias'])) {
 			switch (true) {
 				case isset($_REQUEST['rest']):
@@ -55,7 +58,7 @@ class Base3IliasBootstrap implements IBootstrap {
 		ServiceLocator::useInstance($servicelocator);
 		$servicelocator
 			->set('servicelocator', $servicelocator, IContainer::SHARED)
-			->set(IRequest::class, Request::fromGlobals(), IContainer::SHARED)
+			->set(IRequest::class, $request, IContainer::SHARED)
 			->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
 			->set('classmap', new Base3IliasClassMap($servicelocator), IContainer::SHARED)
