@@ -9,11 +9,9 @@ $dataDir = $clientDir = $tmpDir = '';
 if (isset($iliasConfig['clients']) && isset($iliasConfig['clients']['datadir']) && isset($iliasConfig['clients']['default'])) {
 	$dataDir = $iliasConfig['clients']['datadir'] . '/';
 	$clientDir = $dataDir . $iliasConfig['clients']['default'] . '/';
-	$tmpDir = $clientDir . 'base3/';
 }
 define('DIR_DATA', $dataDir);
 define('DIR_CLIENT', $clientDir);
-define('DIR_TMP', $tmpDir);
 
 // installation dirs
 define('DIR_COMPONENTS', DIR_ILIAS . 'components/');
@@ -22,6 +20,7 @@ define('DIR_FRAMEWORK', DIR_BASE3 . 'Base3Framework/');
 define('DIR_SRC', DIR_FRAMEWORK . 'src/');
 define('DIR_TEST', DIR_FRAMEWORK . 'test/');
 define('DIR_PLUGIN', DIR_BASE3);
+define('DIR_TMP', DIR_BASE3 . 'temp/');
 define('DIR_LOCAL', DIR_TMP);
 
 // autoload, bootstrap
