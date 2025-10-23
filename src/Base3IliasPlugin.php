@@ -4,8 +4,10 @@ namespace Base3Ilias;
 
 use Base3\Api\IAssetResolver;
 use Base3\Api\IContainer;
+use Base3\Api\IMvcView;
 use Base3\Api\IPlugin;
 use Base3\Configuration\Api\IConfiguration;
+use Base3\Core\MvcView;
 use Base3\Database\Api\IDatabase;
 use Base3\Logger\Api\ILogger;
 use Base3\Accesscontrol\Api\IAccesscontrol;
@@ -58,6 +60,8 @@ class Base3IliasPlugin implements IPlugin {
 			])
 			->set('usermanager', fn() => new Base3IliasUsermanager, IContainer::SHARED)
 			->set(IUsermanager::class, 'usermanager', IContainer::ALIAS)
+			->set('view', fn() => new MvcView)
+			->set(IMvcView::class, 'view', IContainer::ALIAS)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
 	}
 
