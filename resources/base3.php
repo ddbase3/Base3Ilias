@@ -20,10 +20,10 @@ define('DIR_FRAMEWORK', DIR_BASE3 . 'Base3Framework/');
 define('DIR_SRC', DIR_FRAMEWORK . 'src/');
 define('DIR_TEST', DIR_FRAMEWORK . 'test/');
 define('DIR_PLUGIN', DIR_BASE3);
-define('DIR_TMP', DIR_BASE3 . 'temp/');
+define('DIR_TMP', DIR_BASE3 . 'tmp/');
 define('DIR_LOCAL', DIR_TMP);
 
 // autoload, bootstrap
 require_once DIR_ILIAS . 'vendor/composer/vendor/autoload.php';
-(new \Base3Ilias\Base3IliasBootstrap())->run();
+(new \Base3Ilias\Base3\Base3IliasBootstrap())->run();
 

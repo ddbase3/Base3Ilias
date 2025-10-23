@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias;
+namespace Base3Ilias\Base3;
 
 use Base3\Configuration\Api\IConfiguration;
 use Base3\Database\Api\IDatabase;

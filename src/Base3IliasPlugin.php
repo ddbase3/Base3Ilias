@@ -15,6 +15,12 @@ use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
 use Base3\Session\Api\ISession;
 use Base3\Session\NoSession\NoSession;
 use Base3\Usermanager\Api\IUsermanager;
+use Base3Ilias\Base3\Base3IliasAssetResolver;
+use Base3Ilias\Base3\Base3IliasAuth;
+use Base3Ilias\Base3\Base3IliasConfiguration;
+use Base3Ilias\Base3\Base3IliasDatabase;
+use Base3Ilias\Base3\Base3IliasLogger;
+use Base3Ilias\Base3\Base3IliasUsermanager;
 use Pimple\Container;
 use ReflectionClass;
 

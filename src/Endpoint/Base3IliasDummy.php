@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias;
+namespace Base3Ilias\Endpoint;
 
 use Base3\Api\IOutput;
 use Base3\Logger\Api\ILogger;

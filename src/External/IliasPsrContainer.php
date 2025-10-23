@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias;
+namespace Base3Ilias\External;
 
 use Psr\Container\ContainerInterface;
 use ILIAS\DI\Container as IliasContainer;
