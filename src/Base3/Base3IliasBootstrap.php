@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias;
+namespace Base3Ilias\Base3;
 
 use Base3\Api\IBootstrap;
 use Base3\Api\IClassMap;
@@ -15,10 +15,8 @@ use Base3\Hook\IHookManager;
 use Base3\Hook\IHookListener;
 use Base3\Hook\HookManager;
 use Base3\ServiceSelector\Api\IServiceSelector;
-use Base3Ilias\Base3IliasServiceLocator;
-use Base3Ilias\IliasPsrContainer;
 use Base3\ServiceSelector\Standard\StandardServiceSelector;
-use Base3Ilias\Base3IliasConfiguration;
+use Base3Ilias\External\IliasPsrContainer;
 use XapiProxy\ilInitialisation;
 use ilContext;
 
@@ -41,7 +39,7 @@ class Base3IliasBootstrap implements IBootstrap {
 			ilInitialisation::initILIAS();
 		}
 
-		// Debug mode - 0: aus, 1: an, ggfs noch höhere Stufen?
+		// Debug mode - 0: off, 1: on
 		putenv('DEBUG=1');
 
 		// error handling
