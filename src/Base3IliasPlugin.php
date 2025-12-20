@@ -44,7 +44,8 @@ class Base3IliasPlugin implements IPlugin {
 		$this->container
 			->set($this->getName(), $this, IContainer::SHARED)
 			->set(Container::class, $GLOBALS['DIC'], IContainer::SHARED)
-			->set(IDatabase::class, new Base3IliasDatabase, IContainer::SHARED)
+			->set(IDatabase::class, fn() => new Base3IliasDatabase, IContainer::SHARED)
+			->set('database', IDatabase::class, IContainer::ALIAS)
 			->set('logger', fn() => new Base3IliasLogger, IContainer::SHARED)
 			->set(ILogger::class, 'logger', IContainer::ALIAS)
 			->set('configuration', fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
