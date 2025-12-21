@@ -32,7 +32,7 @@ class Base3IliasConfiguration implements IConfiguration {
 	private function getDefaultConfiguration(): array {
 		return [
 			'base' => [
-				'url' => 'https://ddahme.qualitus.net/ilias10/public/',
+				'url' => '',
 				'endpoint' => 'base3.php',
 				'intern' => ''
 			],
