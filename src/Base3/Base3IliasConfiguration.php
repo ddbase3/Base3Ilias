@@ -33,10 +33,10 @@ class Base3IliasConfiguration implements IConfiguration {
 		return [
 			'base' => [
 				'url' => 'https://ddahme.qualitus.net/ilias10/public/',
+				'endpoint' => 'base3.php',
 				'intern' => ''
 			],
 			'manager' => [
-				'endpoint' => 'base3.php',
 				'stdscope' => 'web',
 				'layout' => 'simple'
 			],
