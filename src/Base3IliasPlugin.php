@@ -16,6 +16,8 @@ use Base3\Middleware\Session\SessionMiddleware;
 use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
 use Base3\Session\Api\ISession;
 use Base3\Session\NoSession\NoSession;
+use Base3\State\Api\IStateStore;
+use Base3\State\Database\DatabaseStateStore;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
@@ -50,6 +52,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set(ILogger::class, 'logger', IContainer::ALIAS)
 			->set('configuration', fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set(IConfiguration::class, 'configuration', IContainer::ALIAS)
+			->set(IStateStore::class, fn($c) => new DatabaseStateStore($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
 			->set('session', fn($c) => new NoSession($c->get(IConfiguration::class)), IContainer::SHARED)
 			->set(ISession::class, 'session', IContainer::ALIAS)
