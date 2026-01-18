@@ -77,14 +77,14 @@ class Base3IliasConfiguration implements IConfiguration {
 	}
 
 	private function tableExists(): bool {
-		$query = "SHOW TABLES LIKE 'base3ilias_configuration'";
+		$query = "SHOW TABLES LIKE 'base3_configuration'";
 		$result = $this->database->listQuery($query);
 		return !empty($result);
 	}
 
 	private function createAndSeedTable(): void {
 		$this->database->nonQuery("
-			CREATE TABLE `base3ilias_configuration` (
+			CREATE TABLE `base3_configuration` (
 				`id` int(11) NOT NULL AUTO_INCREMENT,
 				`group` varchar(100) NOT NULL,
 				`name` varchar(100) NOT NULL,
@@ -108,14 +108,14 @@ class Base3IliasConfiguration implements IConfiguration {
 		$v = $this->database->escape($value);
 
 		$this->database->nonQuery("
-			INSERT INTO `base3ilias_configuration` (`group`, `name`, `value`)
+			INSERT INTO `base3_configuration` (`group`, `name`, `value`)
 			VALUES ('$g', '$n', '$v')
 			ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)
 		");
 	}
 
 	private function fetchConfigurationFromDatabase(): array {
-		$query = "SELECT `group`, `name`, `value` FROM `base3ilias_configuration`";
+		$query = "SELECT `group`, `name`, `value` FROM `base3_configuration`";
 		$rows = $this->database->multiQuery($query);
 
 		$config = [];
