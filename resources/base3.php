@@ -23,6 +23,12 @@ define('DIR_PLUGIN', DIR_BASE3);
 define('DIR_TMP', DIR_BASE3 . 'tmp/');
 define('DIR_LOCAL', DIR_TMP);
 
+if (PHP_SAPI === 'cli') {
+	$_SERVER['HTTP_HOST'] ??= 'localhost';
+	$_SERVER['REQUEST_URI'] ??= '/';
+	$_SERVER['HTTPS'] ??= 'off';
+}
+
 // autoload, bootstrap
 require_once DIR_ILIAS . 'vendor/composer/vendor/autoload.php';
 (new \Base3Ilias\Base3\Base3IliasBootstrap())->run();
