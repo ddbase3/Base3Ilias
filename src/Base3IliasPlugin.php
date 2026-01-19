@@ -53,10 +53,10 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IConfiguration::class, fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new DatabaseStateStore($c->get(IDatabase::class)), IContainer::SHARED)
-			->set('authentications', fn($c) => [ new Base3IliasAuth($this->container->get('ilAuthSession')) ])
+			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ])
 			->set(ISession::class, fn($c) => new NoSession($c->get(IConfiguration::class)), IContainer::SHARED)
 			->set('session', ISession::class, IContainer::ALIAS)
-			->set(IAccesscontrol::class, new SelectedAccesscontrol($this->container->get('authentications')), IContainer::SHARED)
+			->set(IAccesscontrol::class, fn($c) => new SelectedAccesscontrol($c->get('authentications')), IContainer::SHARED)
 			->set('accesscontrol', IAccesscontrol::class, IContainer::ALIAS)
 			->set('middlewares', fn($c) => [
 				new SessionMiddleware($c->get(ISession::class)),
