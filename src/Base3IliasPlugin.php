@@ -19,6 +19,7 @@ use Base3\Session\NoSession\NoSession;
 use Base3\State\Api\IStateStore;
 use Base3\State\Database\DatabaseStateStore;
 use Base3\Usermanager\Api\IUsermanager;
+use Base3\Worker\DelegateWorker;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
@@ -66,7 +67,10 @@ class Base3IliasPlugin implements IPlugin {
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
 			->set(IMvcView::class, fn() => new MvcView)
 			->set('view', IMvcView::class, IContainer::ALIAS)
-			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED);
+			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED)
+			->set('workers', fn($c) => [
+				'Base3Ilias' => fn() => new DelegateWorker()
+			]);
 	}
 
 	// Private methods

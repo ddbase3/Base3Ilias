@@ -1,0 +1,8 @@
+crontab -e
+
+@reboot cd /srv/www/html/...ILIAS_DIR.../component/Base3/Base3Ilias/cron && ./startd.sh ./worker.d.sh start
+
+oder
+
+nohup worker.d.sh >/dev/null 2>&1 &
+
