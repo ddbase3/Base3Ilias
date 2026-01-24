@@ -12,6 +12,7 @@ use Base3\Database\Api\IDatabase;
 use Base3\Logger\Api\ILogger;
 use Base3\Accesscontrol\Api\IAccesscontrol;
 use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
+use Base3\Language\Api\ILanguage;
 use Base3\Middleware\Session\SessionMiddleware;
 use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
 use Base3\Session\Api\ISession;
@@ -24,6 +25,7 @@ use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
 use Base3Ilias\Base3\Base3IliasDatabase;
+use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
 use Base3Ilias\Base3\Base3IliasUsermanager;
 use Pimple\Container;
@@ -47,9 +49,9 @@ class Base3IliasPlugin implements IPlugin {
 		$this->container
 			->set($this->getName(), $this, IContainer::SHARED)
 			->set(Container::class, $GLOBALS['DIC'], IContainer::SHARED)
-			->set(IDatabase::class, fn() => new Base3IliasDatabase, IContainer::SHARED)
+			->set(IDatabase::class, fn() => new Base3IliasDatabase(), IContainer::SHARED)
 			->set('database', IDatabase::class, IContainer::ALIAS)
-			->set(ILogger::class, fn() => new Base3IliasLogger, IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(ILogger::class, fn() => new Base3IliasLogger(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('logger', ILogger::class, IContainer::ALIAS)
 			->set(IConfiguration::class, fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
@@ -63,11 +65,12 @@ class Base3IliasPlugin implements IPlugin {
 				new SessionMiddleware($c->get(ISession::class)),
 				new AccesscontrolMiddleware($c->get(IAccesscontrol::class))
 			])
-			->set(IUsermanager::class, fn() => new Base3IliasUsermanager, IContainer::SHARED)
+			->set(IUsermanager::class, fn() => new Base3IliasUsermanager(), IContainer::SHARED)
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
-			->set(IMvcView::class, fn() => new MvcView)
+			->set(ILanguage::class, fn() => new Base3IliasLanguage(), IContainer::SHARED)
+			->set(IMvcView::class, fn($c) => new MvcView($c->get(ILanguage::class)))
 			->set('view', IMvcView::class, IContainer::ALIAS)
-			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver, IContainer::SHARED)
+			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker()
 			]);
