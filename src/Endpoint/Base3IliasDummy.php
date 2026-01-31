@@ -17,7 +17,7 @@ class Base3IliasDummy implements IOutput {
 
 	// Implementation of IOutput
 
-	public function getOutput($out = "html") {
+	public function getOutput(string $out = 'html', bool $final = false): string {
 
 		$this->logger->log('Base3IliasDummy', 'Das ist ein Test-Log');
 
@@ -29,7 +29,7 @@ class Base3IliasDummy implements IOutput {
 		return json_encode($row);
 	}
 
-	public function getHelp() {
+	public function getHelp(): string {
 		return 'Base3 ILIAS Dummy Endpoint';
 	}
 }

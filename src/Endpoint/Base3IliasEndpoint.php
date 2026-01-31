@@ -19,13 +19,13 @@ class Base3IliasEndpoint implements IOutput {
 
 	// Implementation of IOutput
 
-	public function getOutput($out = "html") {
-        $sql = 'SELECT `obj_id`, `title`, `description` FROM `object_data` WHERE `obj_id` = 1';
+	public function getOutput(string $out = 'html', bool $final = false): string {
+		$sql = 'SELECT `obj_id`, `title`, `description` FROM `object_data` WHERE `obj_id` = 1';
 		$row = $this->database->singleQuery($sql);
 		return json_encode($row);
 	}
 
-	public function getHelp() {
+	public function getHelp(): string {
 		return 'Base3 ILIAS Endpoint';
 	}
 }

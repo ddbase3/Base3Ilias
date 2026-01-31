@@ -19,7 +19,7 @@ class Base3IliasCheck implements IOutput {
 
     // Implementation of IOutput
 
-    public function getOutput($out = "html") {
+    public function getOutput(string $out = 'html', bool $final = false): string {
         $start_time = microtime(true);
         $data = [];
 
@@ -119,7 +119,7 @@ class Base3IliasCheck implements IOutput {
         return json_encode($data);
     }
 
-    public function getHelp() {
+    public function getHelp(): string {
         return 'Base3 ILIAS Check';
     }
 }
