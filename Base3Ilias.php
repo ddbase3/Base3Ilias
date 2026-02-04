@@ -9,7 +9,7 @@ use Base3\Base3Ilias\Base3IliasPublicAsset;
 
 class Base3Ilias implements Component {
 
-	private $verbose = true;
+	private $verbose = false;
 
 	public function init(
 		array | \ArrayAccess &$define,
@@ -29,7 +29,7 @@ class Base3Ilias implements Component {
 		$endpoint = 'base3.php';
 		$this->out('Deploy endpoint: ' . $endpoint);
 		$contribute[PublicAsset::class] = fn() => new Endpoint($this, $endpoint);
-	
+
 		$this->out();
 
 		$this->deployAssets($contribute);
