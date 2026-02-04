@@ -7,6 +7,7 @@ use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
 use Base3\Api\IRequest;
+use Base3\Api\ISystemService;
 use Base3\Core\Autoloader;
 use Base3\Core\PluginClassMap;
 use Base3\Core\Request;
@@ -56,6 +57,7 @@ class Base3IliasBootstrap implements IBootstrap {
 		ServiceLocator::useInstance($servicelocator);
 		$servicelocator
 			->set('servicelocator', $servicelocator, IContainer::SHARED)
+			->set(ISystemService::class, fn() => new Base3IliasSystemService(), IContainer::SHARED)
 			->set(IRequest::class, $request, IContainer::SHARED)
 			->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
