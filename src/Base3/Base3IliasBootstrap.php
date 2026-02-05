@@ -28,16 +28,17 @@ class Base3IliasBootstrap implements IBootstrap {
 		// handle request vars
 		$request = Request::fromGlobals();
 
+		// check system
+		$systemService = new Base3IliasSystemService();
+		$iliasVersion = $systemService->getHostSystemVersion();
+
 		// ilias bootstrap
 		if (!isset($_REQUEST['noilias'])) {
-			switch (true) {
-				case isset($_REQUEST['rest']):
-					ilContext::init(ilContext::CONTEXT_REST);
-					break;
-				default:
-					ilContext::init(ilContext::CONTEXT_WEB);
+			if (version_compare($iliasVersion, "11.0", "<")) {
+				$this->initIlias10();
+			} else {
+				$this->initIlias11();
 			}
-			ilInitialisation::initILIAS();
 		}
 
 		// Debug mode - 0: off, 1: on
@@ -57,7 +58,7 @@ class Base3IliasBootstrap implements IBootstrap {
 		ServiceLocator::useInstance($servicelocator);
 		$servicelocator
 			->set('servicelocator', $servicelocator, IContainer::SHARED)
-			->set(ISystemService::class, fn() => new Base3IliasSystemService(), IContainer::SHARED)
+			->set(ISystemService::class, $systemService, IContainer::SHARED)
 			->set(IRequest::class, $request, IContainer::SHARED)
 			->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
@@ -84,5 +85,21 @@ class Base3IliasBootstrap implements IBootstrap {
 		$serviceselector = $servicelocator->get(IServiceSelector::class);
 		echo $serviceselector->go();
 		$hookManager->dispatch('bootstrap.finish');
+	}
+
+	private function initIlias10() {
+		switch (true) {
+			case isset($_REQUEST['rest']):
+				ilContext::init(ilContext::CONTEXT_REST);
+				break;
+			default:
+				ilContext::init(ilContext::CONTEXT_WEB);
+		}
+		ilInitialisation::initILIAS();
+	}
+
+	private function initIlias11() {
+		require_once DIR_ILIAS . '/artifacts/bootstrap_default.php';
+		entry_point('ILIAS Legacy Initialisation Adapter');
 	}
 }
