@@ -119,7 +119,7 @@ abstract class AbstractPageComponentPluginGUI extends ilPageComponentPluginGUI {
 		$html .= '<div style="font-size: 1.1em; font-weight: bold; color: #333;">' . $this->getPageComponentName() . '</div>';
 		$html .= '<div style="font-size: 0.9em; color: #666;"><i>' . $this->getPageComponentDesc() . '</i></div>';
 		$html .= '</div>';
-		// $html .= '<img src="assets/logo.svg" style="width:48px; height:auto; margin-left: 16px;" />';
+		$html .= '<img src="components/Base3/Base3Ilias/logo.svg" style="width:48px; height:auto; margin-left: 16px;" />';
 		$html .= '</div>';
 		return $html;
 	}
