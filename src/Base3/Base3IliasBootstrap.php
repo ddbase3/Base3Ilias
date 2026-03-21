@@ -12,12 +12,15 @@ use Base3\Core\Autoloader;
 use Base3\Core\PluginClassMap;
 use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
+use Base3\Database\Api\IDatabase;
 use Base3\Hook\IHookManager;
 use Base3\Hook\IHookListener;
 use Base3\Hook\HookManager;
 use Base3\ServiceSelector\Api\IServiceSelector;
 use Base3\ServiceSelector\Standard\StandardServiceSelector;
+use Base3Ilias\Api\IPageComponentConfigStore;
 use Base3Ilias\External\IliasPsrContainer;
+use Base3Ilias\Service\PageComponentConfigStore;
 use XapiProxy\ilInitialisation;
 use ilContext;
 
@@ -64,7 +67,8 @@ class Base3IliasBootstrap implements IBootstrap {
 			->set(IHookManager::class, fn() => new HookManager, ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set('classmap', IClassMap::class, IContainer::ALIAS)
-			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED);
+			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED)
+			->set(IPageComponentConfigStore::class, fn($c) => new PageComponentConfigStore($c->get(IDatabase::class)), IContainer::SHARED);
 
 		// fill container with ILIAS services
 		$servicelocator->setIliasContainer(new IliasPsrContainer($GLOBALS['DIC']));

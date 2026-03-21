@@ -16,6 +16,8 @@ use ilDBInterface;
  *   so these methods return safe defaults.
  * - Error handling: ILIAS typically throws exceptions on failures; therefore isError()/errorNumber()/errorMessage()
  *   return default values.
+ * - Transactions: ilDBInterface provides beginTransaction()/commit()/rollback() returning bool and may throw
+ *   ilDatabaseException; we map to the extended IDatabase transaction API and throw RuntimeException on failure.
  */
 class Base3IliasDatabase implements IDatabase {
 
@@ -47,6 +49,34 @@ class Base3IliasDatabase implements IDatabase {
 		// There is no reliable way to close it here without side effects.
 	}
 
+	public function beginTransaction(): void {
+		$this->requireDb();
+
+		// ilDBInterface supports transactions and may throw ilDatabaseException.
+		$ok = $this->db->beginTransaction();
+		if ($ok !== true) {
+			throw new \RuntimeException('ILIAS beginTransaction() returned false.');
+		}
+	}
+
+	public function commit(): void {
+		$this->requireDb();
+
+		$ok = $this->db->commit();
+		if ($ok !== true) {
+			throw new \RuntimeException('ILIAS commit() returned false.');
+		}
+	}
+
+	public function rollback(): void {
+		$this->requireDb();
+
+		$ok = $this->db->rollback();
+		if ($ok !== true) {
+			throw new \RuntimeException('ILIAS rollback() returned false.');
+		}
+	}
+
 	public function nonQuery(string $query): void {
 		$this->requireDb();
 		$this->db->manipulate($query);
@@ -58,7 +88,6 @@ class Base3IliasDatabase implements IDatabase {
 		$stmt = $this->db->query($query);
 		$row = $this->db->fetchAssoc($stmt);
 
-		// If no row found, return null (per interface contract).
 		if (!$row) {
 			return null;
 		}
@@ -73,7 +102,6 @@ class Base3IliasDatabase implements IDatabase {
 		$stmt = $this->db->query($query);
 		$row = $this->db->fetchAssoc($stmt);
 
-		// Must return null if no row found.
 		return $row ?: null;
 	}
 
