@@ -29,7 +29,7 @@ class Base3IliasDatabase implements IDatabase {
 	public function __construct() {
 		global $DIC;
 
-		if ($DIC !== null && $DIC->database() !== null) {
+		if($DIC !== null && $DIC->database() !== null) {
 			$this->db = $DIC->database();
 		}
 	}
@@ -54,7 +54,7 @@ class Base3IliasDatabase implements IDatabase {
 
 		// ilDBInterface supports transactions and may throw ilDatabaseException.
 		$ok = $this->db->beginTransaction();
-		if ($ok !== true) {
+		if($ok !== true) {
 			throw new \RuntimeException('ILIAS beginTransaction() returned false.');
 		}
 	}
@@ -63,7 +63,7 @@ class Base3IliasDatabase implements IDatabase {
 		$this->requireDb();
 
 		$ok = $this->db->commit();
-		if ($ok !== true) {
+		if($ok !== true) {
 			throw new \RuntimeException('ILIAS commit() returned false.');
 		}
 	}
@@ -72,7 +72,7 @@ class Base3IliasDatabase implements IDatabase {
 		$this->requireDb();
 
 		$ok = $this->db->rollback();
-		if ($ok !== true) {
+		if($ok !== true) {
 			throw new \RuntimeException('ILIAS rollback() returned false.');
 		}
 	}
@@ -88,7 +88,7 @@ class Base3IliasDatabase implements IDatabase {
 		$stmt = $this->db->query($query);
 		$row = $this->db->fetchAssoc($stmt);
 
-		if (!$row) {
+		if(!$row) {
 			return null;
 		}
 
@@ -111,7 +111,7 @@ class Base3IliasDatabase implements IDatabase {
 		$stmt = $this->db->query($query);
 		$list = [];
 
-		while ($row = $this->db->fetchAssoc($stmt)) {
+		while($row = $this->db->fetchAssoc($stmt)) {
 			$values = array_values($row);
 			$list[] = $values[0] ?? null;
 		}
@@ -126,7 +126,7 @@ class Base3IliasDatabase implements IDatabase {
 		$stmt = $this->db->query($query);
 		$rows = [];
 
-		while ($row = $this->db->fetchAssoc($stmt)) {
+		while($row = $this->db->fetchAssoc($stmt)) {
 			$rows[] = $row;
 		}
 
@@ -149,7 +149,7 @@ class Base3IliasDatabase implements IDatabase {
 	public function escape(string $str): string {
 		// Escapes to a quoted-safe fragment; callers still add surrounding quotes themselves.
 		$str = str_replace(
-			["\\",   "\x00", "\n",  "\r",  "'",   '"',  "\x1a"],
+			["\\", "\x00", "\n", "\r", "'", '"', "\x1a"],
 			["\\\\", "\\0", "\\n", "\\r", "\\'", '\\"', "\\Z"],
 			$str
 		);
@@ -173,7 +173,7 @@ class Base3IliasDatabase implements IDatabase {
 	}
 
 	private function requireDb(): void {
-		if ($this->db === null) {
+		if($this->db === null) {
 			throw new \RuntimeException('ILIAS database service is not available (DIC/database is null).');
 		}
 	}

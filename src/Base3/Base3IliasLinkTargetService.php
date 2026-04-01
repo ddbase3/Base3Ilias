@@ -11,7 +11,8 @@ use Base3\LinkTarget\Api\ILinkTargetService;
  * Example:
  * - target: ['name' => 'chatservice', 'out' => 'php']
  * - params: ['baseprompt' => 1]
- * - result: ?name=chatservice&out=php&baseprompt=1
+ * - default result:
+ *   index.php?baseClass=ilUIPluginRouterGUI&cmdClass=ilBase3IliasAdapterAjaxGUI&cmd=dispatch&name=chatservice&out=php&baseprompt=1
  *
  * If "out" is omitted, "php" is used.
  */
@@ -46,13 +47,28 @@ class Base3IliasLinkTargetService implements ILinkTargetService {
 		if ($queryString === '') return $endpoint;
 
 		$separator = str_contains($endpoint, '?') ? '&' : '?';
+
 		return $endpoint . $separator . $queryString;
 	}
 
 	private function getEndpoint(): string {
 		if (isset($this->endpoint)) return $this->endpoint;
+
 		$config = $this->configuration->get('base');
-		$this->endpoint = isset($config['endpoint']) ? (string) $config['endpoint'] : 'base3.php';
+		$this->endpoint = isset($config['endpoint']) && trim((string) $config['endpoint']) !== ''
+			? (string) $config['endpoint']
+			: $this->getDefaultEndpoint();
+
 		return $this->endpoint;
+	}
+
+	private function getDefaultEndpoint(): string {
+		$query = http_build_query([
+			'baseClass' => 'ilUIPluginRouterGUI',
+			'cmdClass' => 'ilBase3IliasAdapterAjaxGUI',
+			'cmd' => 'dispatch'
+		]);
+
+		return 'index.php?' . $query;
 	}
 }
