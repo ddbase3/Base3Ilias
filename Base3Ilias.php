@@ -26,6 +26,7 @@ class Base3Ilias implements Component {
 		$this->out('-- BASE3 ILIAS Integration --------------------------------');
 		$this->out();
 
+		// depricated
 		$endpoint = 'base3.php';
 		$this->out('Deploy endpoint: ' . $endpoint);
 		$contribute[PublicAsset::class] = fn() => new Endpoint($this, $endpoint);
