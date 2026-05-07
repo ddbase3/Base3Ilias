@@ -156,6 +156,10 @@ class Base3IliasRuntime {
 			$clientDir = $dataDir . trim((string) $iliasConfig['clients']['default'], '/\\') . DIRECTORY_SEPARATOR;
 		}
 
+		if ($clientDir === '') {
+			throw new RuntimeException('ILIAS client data directory could not be resolved.');
+		}
+
 		if (!defined('DIR_DATA')) define('DIR_DATA', $dataDir);
 		if (!defined('DIR_CLIENT')) define('DIR_CLIENT', $clientDir);
 		if (!defined('DIR_COMPONENTS')) define('DIR_COMPONENTS', DIR_ILIAS . 'components/');
@@ -164,8 +168,31 @@ class Base3IliasRuntime {
 		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src/');
 		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test/');
 		if (!defined('DIR_PLUGIN')) define('DIR_PLUGIN', DIR_BASE3);
-		if (!defined('DIR_TMP')) define('DIR_TMP', DIR_BASE3 . 'tmp/');
-		if (!defined('DIR_LOCAL')) define('DIR_LOCAL', DIR_TMP);
+
+		if (!defined('DIR_BASE3_DATA')) define('DIR_BASE3_DATA', DIR_CLIENT . 'base3' . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_BASE3_ARTIFACTS')) define('DIR_BASE3_ARTIFACTS', DIR_BASE3_DATA . 'artifacts' . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_BASE3_CACHE')) define('DIR_BASE3_CACHE', DIR_BASE3_DATA . 'cache' . DIRECTORY_SEPARATOR);
+
+		self::ensureDirectory(DIR_BASE3_DATA);
+		self::ensureDirectory(DIR_BASE3_ARTIFACTS);
+		self::ensureDirectory(DIR_BASE3_CACHE);
+
+		if (!defined('DIR_TMP')) define('DIR_TMP', DIR_BASE3_ARTIFACTS);
+		if (!defined('DIR_LOCAL')) define('DIR_LOCAL', DIR_BASE3_DATA);
+	}
+
+	protected static function ensureDirectory(string $path): void {
+		if ($path === '') {
+			throw new RuntimeException('Directory path is empty.');
+		}
+
+		if (is_dir($path)) {
+			return;
+		}
+
+		if (!mkdir($path, 0770, true) && !is_dir($path)) {
+			throw new RuntimeException('Could not create directory: ' . $path);
+		}
 	}
 
 	protected static function prepareCliRequest(): void {
