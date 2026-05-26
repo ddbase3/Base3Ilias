@@ -52,34 +52,36 @@ abstract class AbstractPageComponentPluginGUI extends ilPageComponentPluginGUI {
 
 	public function create(): void {
 		$form = $this->initForm(true);
+
 		if ($form->checkInput()) {
-			$props = [];
-			foreach ($this->getDefaultProps() as $key => $_) {
-				$props[$key] = $form->getInput($key);
-			}
-			if ($this->createElement($props)) {
+			$props = $this->getElementPropsFromForm($form);
+
+			if ($this->beforeCreateElement($form, $props) && $this->createElement($props)) {
+				$this->afterCreateElement($form, $props);
 				$this->tpl->setOnScreenMessage('success', $this->lng->txt("msg_obj_modified"), true);
 				$this->returnToParent();
 			}
 		}
+
 		$form->setValuesByPost();
-		$this->tpl->setContent($form->getHtml());
+		$this->tpl->setContent($form->getHTML());
 	}
 
 	public function update(): void {
-		$form = $this->initForm(true);
+		$form = $this->initForm(false);
+
 		if ($form->checkInput()) {
-			$props = [];
-			foreach ($this->getDefaultProps() as $key => $_) {
-				$props[$key] = $form->getInput($key);
-			}
-			if ($this->updateElement($props)) {
+			$props = $this->getElementPropsFromForm($form);
+
+			if ($this->beforeUpdateElement($form, $props) && $this->updateElement($props)) {
+				$this->afterUpdateElement($form, $props);
 				$this->tpl->setOnScreenMessage('success', $this->lng->txt("msg_obj_modified"), true);
 				$this->returnToParent();
 			}
 		}
+
 		$form->setValuesByPost();
-		$this->tpl->setContent($form->getHtml());
+		$this->tpl->setContent($form->getHTML());
 	}
 
 	protected function initForm($a_create = false): ilPropertyFormGUI {
@@ -103,6 +105,55 @@ abstract class AbstractPageComponentPluginGUI extends ilPageComponentPluginGUI {
 		return $form;
 	}
 
+	/**
+	 * Returns the PageComponent properties that are persisted in the page XML.
+	 *
+	 * Subclasses may add additional form inputs in setFormContent(). These
+	 * inputs are intentionally not stored in the PageComponent XML unless their
+	 * keys are part of getDefaultProps(). This allows specialized components to
+	 * store only a compact technical reference in the XML and persist larger
+	 * configuration payloads elsewhere, e.g. in the BASE3 SettingsStore.
+	 */
+	protected function getElementPropsFromForm(ilPropertyFormGUI $form): array {
+		$props = [];
+
+		foreach ($this->getDefaultProps() as $key => $_) {
+			$props[$key] = $form->getInput($key);
+		}
+
+		return $props;
+	}
+
+	/**
+	 * Hook before a new PageComponent element is created.
+	 *
+	 * Return false to stop element creation and show the form again.
+	 */
+	protected function beforeCreateElement(ilPropertyFormGUI $form, array &$props): bool {
+		return true;
+	}
+
+	/**
+	 * Hook after a new PageComponent element has been created successfully.
+	 */
+	protected function afterCreateElement(ilPropertyFormGUI $form, array $props): void {
+	}
+
+	/**
+	 * Hook before an existing PageComponent element is updated.
+	 *
+	 * Return false to stop element update and show the form again.
+	 */
+	protected function beforeUpdateElement(ilPropertyFormGUI $form, array &$props): bool {
+		return true;
+	}
+
+	/**
+	 * Hook after an existing PageComponent element has been updated successfully.
+	 */
+	protected function afterUpdateElement(ilPropertyFormGUI $form, array $props): void {
+	}
+
 	public function getElementHTML(string $a_mode, array $a_properties, string $plugin_version): string {
 		switch ($a_mode) {
 			case 'edit':
@@ -110,6 +161,7 @@ abstract class AbstractPageComponentPluginGUI extends ilPageComponentPluginGUI {
 			case 'presentation':
 				return $this->getPresentationHtml($a_properties, $plugin_version);
 		}
+
 		return 'Unknown mode';
 	}
 
