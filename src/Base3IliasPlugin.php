@@ -7,7 +7,6 @@ use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
 use Base3\Api\IPlugin;
 use Base3\Configuration\Api\IConfiguration;
-use Base3\Configuration\Database\DatabaseConfiguration;
 use Base3\Core\MvcView;
 use Base3\Database\Api\IDatabase;
 use Base3\Logger\Api\ILogger;
@@ -26,6 +25,7 @@ use Base3\Worker\DelegateWorker;
 use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
+use Base3Ilias\Base3\Base3IliasConfiguration;
 use Base3Ilias\Base3\Base3IliasDatabase;
 use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
@@ -57,7 +57,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set('database', IDatabase::class, IContainer::ALIAS)
 			->set(ILogger::class, fn() => new Base3IliasLogger(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('logger', ILogger::class, IContainer::ALIAS)
-			->set(IConfiguration::class, fn($c) => new DatabaseConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
+			->set(IConfiguration::class, fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new DatabaseStateStore($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ])
