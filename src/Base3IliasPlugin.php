@@ -20,19 +20,23 @@ use Base3\Session\Api\ISession;
 use Base3\Session\NoSession\NoSession;
 use Base3\State\Api\IStateStore;
 use Base3\State\Database\DatabaseStateStore;
+use Base3\Translation\Api\ITranslation;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3\Worker\DelegateWorker;
+use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasDatabase;
 use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
+use Base3Ilias\Base3\Base3IliasSettings;
+use Base3Ilias\Base3\Base3IliasTranslation;
 use Base3Ilias\Base3\Base3IliasUsermanager;
 use Pimple\Container;
 use ReflectionClass;
 
 class Base3IliasPlugin implements IPlugin {
-    
+
 	public function __construct(private readonly IContainer $container) {}
 
 	// Implementation of IBase
@@ -68,9 +72,11 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IUsermanager::class, fn() => new Base3IliasUsermanager(), IContainer::SHARED)
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
 			->set(ILanguage::class, fn() => new Base3IliasLanguage(), IContainer::SHARED)
+			->set(ITranslation::class, fn($c) => new Base3IliasTranslation($c->get(ILanguage::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IMvcView::class, fn($c) => new MvcView($c->get(ILanguage::class)))
 			->set('view', IMvcView::class, IContainer::ALIAS)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
+			->set(IBase3IliasSettings::class, fn() => new Base3IliasSettings(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker()
 			]);
