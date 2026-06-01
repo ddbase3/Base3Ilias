@@ -21,6 +21,7 @@ class Base3IliasConfiguration extends DatabaseConfiguration {
 		return [
 			'base' => [
 				'endpoint' => 'index.php?baseClass=ilUIPluginRouterGUI&cmdClass=ilBase3IliasAdapterAjaxGUI&cmd=dispatch',
+				'intern' => '',
 				'url' => $this->resolveBaseUrl()
 			]
 		];
