@@ -212,7 +212,7 @@ class Base3IliasRuntime {
 
 	protected static function configureDebug(): void {
 		if (getenv('DEBUG') === false) {
-			putenv('DEBUG=1');
+			putenv('DEBUG=0');
 		}
 
 		$debug = getenv('DEBUG');
