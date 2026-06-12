@@ -3,6 +3,7 @@
 namespace Base3Ilias;
 
 use Base3\Api\IAssetResolver;
+use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
 use Base3\Api\IPlugin;
@@ -78,7 +79,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
 			->set(IBase3IliasSettings::class, fn() => new Base3IliasSettings(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [
-				'Base3Ilias' => fn() => new DelegateWorker()
+				'Base3Ilias' => fn() => new DelegateWorker($c->get(IClassMap::class), $c->get(IConfiguration::class))
 			]);
 	}
 
