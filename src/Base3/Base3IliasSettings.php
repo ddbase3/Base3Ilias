@@ -14,12 +14,15 @@ class Base3IliasSettings implements IBase3IliasSettings {
 	public function getAdministrationConfig(): array {
 		return [
 			[
-				'name' => 'base3',
-				'label' => 'BASE3',
+				'name' => 'system',
+				'label' => 'System',
 				'displays' => [
 					[
 						'name' => 'logadmindisplay',
-						'label' => 'Log'
+						'label' => 'BASE3 Log'
+					], [
+						'name' => 'iliaslogadmindisplay',
+						'label' => 'ILIAS Log'
 					], [
 						'name' => 'servicesadmindisplay',
 						'label' => 'Services'
