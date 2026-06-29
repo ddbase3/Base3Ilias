@@ -8,8 +8,12 @@ use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
 use Base3\Api\IPlugin;
 use Base3\Configuration\Api\IConfiguration;
+use Base3\ConfigValue\Api\IConfigValueResolver;
+use Base3\ConfigValue\Resolver\ConfigValueResolver;
 use Base3\Core\MvcView;
 use Base3\Database\Api\IDatabase;
+use Base3\Event\Api\IEventManager;
+use Base3\Event\EventManager;
 use Base3\Logger\Api\ILogger;
 use Base3\Accesscontrol\Api\IAccesscontrol;
 use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
@@ -76,8 +80,10 @@ class Base3IliasPlugin implements IPlugin {
 			->set(ITranslation::class, fn($c) => new Base3IliasTranslation($c->get(ILanguage::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IMvcView::class, fn($c) => new MvcView($c->get(ILanguage::class)))
 			->set('view', IMvcView::class, IContainer::ALIAS)
+			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
 			->set(IBase3IliasSettings::class, fn() => new Base3IliasSettings(), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(IConfigValueResolver::class, fn($c) => new ConfigValueResolver($c->get(IClassMap::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker($c->get(IClassMap::class), $c->get(IConfiguration::class))
 			]);
