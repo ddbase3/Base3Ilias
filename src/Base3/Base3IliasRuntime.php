@@ -83,6 +83,9 @@ class Base3IliasRuntime {
 		}
 		$hookManager->dispatch('bootstrap.start');
 
+		$servicelocator->get(IMigrationRunner::class)->migrate();
+		$hookManager->dispatch('bootstrap.migrated');
+
 		self::fillIliasContainer($servicelocator);
 
 		self::$serviceLocator = $servicelocator;
