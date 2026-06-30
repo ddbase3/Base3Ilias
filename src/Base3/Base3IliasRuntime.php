@@ -15,6 +15,8 @@ use Base3\Hook\HookManager;
 use Base3\Hook\Api\IHookListener;
 use Base3\Hook\Api\IHookManager;
 use Base3\LinkTarget\Api\ILinkTargetService;
+use Base3\Migration\Api\IMigrationRunner;
+use Base3\Migration\No\NoMigrationRunner;
 use Base3\ServiceSelector\Api\IServiceSelector;
 use Base3\ServiceSelector\Standard\StandardServiceSelector;
 use Base3Ilias\External\IliasPsrContainer;
@@ -61,6 +63,7 @@ class Base3IliasRuntime {
 			->set(IHookManager::class, fn() => new HookManager(), ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set('classmap', IClassMap::class, IContainer::ALIAS)
+			->set(IMigrationRunner::class, fn() => new NoMigrationRunner(), IContainer::SHARED)
 			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED)
 			->set(ILinkTargetService::class, fn($c) => new Base3IliasLinkTargetService($c->get(IConfiguration::class)), IContainer::SHARED);
 
