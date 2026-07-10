@@ -5,7 +5,6 @@ namespace Base3Ilias\Base3;
 use Base3\Api\ICheck;
 use Base3\Core\ServiceLocator;
 use Base3\Usermanager\Api\IUsermanager;
-use Base3\Usermanager\Group;
 use Base3\Usermanager\Permission;
 use Base3\Usermanager\Role;
 use Base3\Usermanager\User;
@@ -20,6 +19,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	private $ilAuthSession;
 	private $ilObjUser;
 	private $rbacreview;
+	private $rbacsystem;
 
 	private $user;
 	private $groups;
@@ -33,13 +33,22 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$this->ilAuthSession = $this->servicelocator->get('ilAuthSession');
 		$this->ilObjUser = $this->servicelocator->get('ilUser');
 		$this->rbacreview = $this->servicelocator->get('rbacreview');
+		$this->rbacsystem = $this->servicelocator->get('rbacsystem');
 
 		if ($this->rbacreview == null) {
 			$this->rbacreview = $this->servicelocator->get('ilRbacReview');
 		}
 
+		if ($this->rbacsystem == null) {
+			$this->rbacsystem = $this->servicelocator->get('ilRbacSystem');
+		}
+
 		if ($this->rbacreview == null && isset($GLOBALS['DIC']['rbacreview'])) {
 			$this->rbacreview = $GLOBALS['DIC']['rbacreview'];
+		}
+
+		if ($this->rbacsystem == null && isset($GLOBALS['DIC']['rbacsystem'])) {
+			$this->rbacsystem = $GLOBALS['DIC']['rbacsystem'];
 		}
 	}
 
@@ -66,7 +75,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$this->user->name = $fullname;
 		$this->user->email = ilObjUser::_lookupEmail($userId);
 		$this->user->lang = ilObjUser::_lookupLanguage($userId);
-		$this->user->role = $this->getCompatibilityRoleName($userId);
+		$this->user->role = 'member';
 		$this->user->roles = $this->getRoles();
 
 		return $this->user;
@@ -75,6 +84,8 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getGroups() {
 		if ($this->groups !== null) return $this->groups;
 
+		// ILIAS group membership is not part of the BASE3 usermanager contract yet.
+		// ILIAS object permissions are exposed through roles and object operations.
 		$this->groups = array();
 		return $this->groups;
 	}
@@ -96,19 +107,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$roles = array();
 
 		foreach ($roleIds as $roleId) {
-			$role = $this->createRoleFromIliasRoleId($roleId, in_array($roleId, $globalRoleIds, true));
-			$roles[] = $role;
-		}
-
-		if ($this->isAdministrator($userId) && !$this->containsRoleName($roles, 'admin')) {
-			$roles[] = Role::fromArray(array(
-				'id' => 'base3:admin',
-				'name' => 'admin',
-				'label' => 'Administrator',
-				'info' => 'Derived from ILIAS administrator privileges.',
-				'archive' => 0,
-				'permissions' => $this->getPermissions()
-			));
+			$roles[] = $this->createRoleFromIliasRoleId($roleId, in_array($roleId, $globalRoleIds, true));
 		}
 
 		$this->roles = $roles;
@@ -118,27 +117,10 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getPermissions() {
 		if ($this->permissions !== null) return $this->permissions;
 
-		$userId = $this->getCurrentUserId();
-		$permissions = array();
-
-		if ($userId > 0 && $this->isAdministrator($userId)) {
-			$permissions[] = Permission::fromArray(array(
-				'scope' => 'system',
-				'permission' => 'admin',
-				'label' => 'System administration',
-				'info' => 'Derived from ILIAS administrator privileges.',
-				'archive' => 0
-			));
-			$permissions[] = Permission::fromArray(array(
-				'scope' => 'entry',
-				'permission' => 'admin',
-				'label' => 'Entry administration',
-				'info' => 'Allows BASE3 entry-admin bypass in embedded ILIAS runtimes.',
-				'archive' => 0
-			));
-		}
-
-		$this->permissions = $permissions;
+		// ILIAS permissions are object-specific. Without a target ref_id there is no
+		// correct effective permission list for the current user. Use can() with
+		// Permission::for('ilias', '<operation>', <ref_id>) for concrete checks.
+		$this->permissions = array();
 		return $this->permissions;
 	}
 
@@ -149,10 +131,6 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 
 		$wantedId = trim((string)$role->id);
 		$wantedName = strtolower(trim((string)$role->name));
-
-		if ($wantedName === 'admin') {
-			return $this->isAdministrator($userId);
-		}
 
 		foreach ($this->getRoles() as $currentRole) {
 			$currentId = trim((string)$currentRole->id);
@@ -171,36 +149,15 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		if ($userId <= 0 || $this->isAnonymousUser($userId)) return false;
 
 		$scope = strtolower(trim((string)$permission->scope));
-		$grant = strtolower(trim((string)$permission->permission));
+		$operation = strtolower(trim((string)$permission->permission));
 
-		if ($scope === '' || $grant === '') return false;
+		if ($scope === '' || $operation === '') return false;
 
-		if (($scope === 'system' && $grant === 'admin') || ($scope === 'entry' && $grant === 'admin')) {
-			return $this->isAdministrator($userId);
-		}
-
-		if (str_starts_with($scope, 'ilias:')) {
-			$refId = (int)substr($scope, 6);
+		if ($scope === 'ilias') {
+			$refId = $this->getRefIdFromPermissionTarget($permission->target);
 			if ($refId <= 0) return false;
 
-			return $this->canAccessIliasRefId($userId, $refId, $grant);
-		}
-
-		if ($scope === 'ilias' && str_contains($grant, ':')) {
-			[$operation, $refId] = explode(':', $grant, 2);
-			$operation = trim($operation);
-			$refId = (int)$refId;
-
-			if ($operation === '' || $refId <= 0) return false;
-
 			return $this->canAccessIliasRefId($userId, $refId, $operation);
-		}
-
-		foreach ($this->getPermissions() as $currentPermission) {
-			if (strtolower(trim((string)$currentPermission->scope)) === $scope
-				&& strtolower(trim((string)$currentPermission->permission)) === $grant) {
-				return true;
-			}
 		}
 
 		return false;
@@ -216,34 +173,9 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 
 	public function getAllUsers() {
 		$user = $this->getUser();
-		if ($user == null || !$this->isAdministrator((int)$user->id)) return array();
+		if ($user == null) return array();
 
-		$rows = ilObjUser::_getAllUserData(['login', 'firstname', 'lastname', 'email'], 1);
-		$users = array();
-
-		foreach ($rows as $row) {
-			$userId = (int)($row['usr_id'] ?? $row['user_id'] ?? 0);
-			if ($userId <= 0 || $this->isAnonymousUser($userId)) continue;
-
-			$name = trim(trim((string)($row['firstname'] ?? '')) . ' ' . trim((string)($row['lastname'] ?? '')));
-			$login = (string)($row['login'] ?? ilObjUser::_lookupLogin($userId));
-
-			if ($name === '') {
-				$name = $login;
-			}
-
-			$users[] = User::fromArray(array(
-				'id' => (string)$userId,
-				'userid' => $login,
-				'name' => $name,
-				'email' => (string)($row['email'] ?? ilObjUser::_lookupEmail($userId)),
-				'lang' => ilObjUser::_lookupLanguage($userId),
-				'role' => $this->getCompatibilityRoleName($userId),
-				'roles' => $userId === $this->getCurrentUserId() ? $this->getRoles() : array()
-			));
-		}
-
-		return $users;
+		return array($user);
 	}
 
 	public function getAllGroups() {
@@ -257,7 +189,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getAllPermissions() {
 		if ($this->allPermissions !== null) return $this->allPermissions;
 
-		$permissions = $this->getPermissions();
+		$permissions = array();
 
 		if ($this->rbacreview != null) {
 			foreach ($this->rbacreview->getOperations() as $operation) {
@@ -269,7 +201,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 					'scope' => 'ilias',
 					'permission' => $name,
 					'label' => $name,
-					'info' => (string)($operation['description'] ?? ''),
+					'info' => (string)($operation['description'] ?? 'ILIAS operation. Effective grants depend on a target ref_id.'),
 					'archive' => 0
 				));
 			}
@@ -308,32 +240,31 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function checkDependencies() {
 		return array(
 			'accesscontrol' => $this->accesscontrol == null ? 'Fail' : 'Ok',
-			'ilAuthSession' => $this->ilAuthSession == null ? 'Fail' : 'Ok',
 			'ilUser' => $this->ilObjUser == null ? 'Fail' : 'Ok',
 			'rbacreview' => $this->rbacreview == null ? 'Fail' : 'Ok',
-			'current_user_id' => $this->getCurrentUserId(),
-			'current_user_role' => $this->getCompatibilityRoleName($this->getCurrentUserId())
+			'rbacsystem' => $this->rbacsystem == null ? 'Fail' : 'Ok'
 		);
 	}
 
 	// Private methods
 
 	private function getCurrentUserId(): int {
-		$userId = 0;
+		if ($this->ilObjUser != null) {
+			$userId = (int)$this->ilObjUser->getId();
+			if ($userId > 0) return $userId;
+		}
 
 		if ($this->accesscontrol != null) {
-			$userId = (int)$this->accesscontrol->getUserId();
+			$userId = $this->accesscontrol->getUserId();
+			if (is_numeric($userId) && (int)$userId > 0) return (int)$userId;
 		}
 
-		if ($userId <= 0 && $this->ilAuthSession != null) {
+		if ($this->ilAuthSession != null) {
 			$userId = (int)$this->ilAuthSession->getUserId();
+			if ($userId > 0) return $userId;
 		}
 
-		if ($userId <= 0 && $this->ilObjUser != null) {
-			$userId = (int)$this->ilObjUser->getId();
-		}
-
-		return $userId;
+		return 0;
 	}
 
 	private function userExists(int $userId): bool {
@@ -344,47 +275,12 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	private function isAnonymousUser(int $userId): bool {
-		if ($userId <= 0) return true;
-		if (defined('ANONYMOUS_USER_ID') && $userId === (int)ANONYMOUS_USER_ID) return true;
-
 		return $userId === 13;
 	}
 
-	private function isSystemUser(int $userId): bool {
-		if ($userId <= 0) return false;
-		if (defined('SYSTEM_USER_ID') && $userId === (int)SYSTEM_USER_ID) return true;
-
-		return $userId === 6;
-	}
-
-	private function isAdministrator(int $userId): bool {
-		if ($userId <= 0 || $this->isAnonymousUser($userId)) return false;
-		if ($this->isSystemUser($userId)) return true;
-		if ($this->rbacreview == null) return false;
-
-		$globalRoleIds = array_map('intval', $this->rbacreview->assignedGlobalRoles($userId));
-
-		foreach ($globalRoleIds as $roleId) {
-			$title = strtolower(trim((string)ilObject::_lookupTitle($roleId)));
-			$name = $this->normalizeRoleName($title, '');
-
-			if (in_array($title, ['administrator', 'admin', 'il_role_admin'], true)) return true;
-			if (in_array($name, ['administrator', 'admin', 'il_role_admin'], true)) return true;
-		}
-
-		return false;
-	}
-
-	private function getCompatibilityRoleName(int $userId): string {
-		if ($userId <= 0 || $this->isAnonymousUser($userId)) return 'visit';
-		if ($this->isAdministrator($userId)) return 'admin';
-
-		return 'member';
-	}
-
 	private function createRoleFromIliasRoleId(int $roleId, bool $global): Role {
-		$title = (string)ilObject::_lookupTitle($roleId);
-		$name = $this->normalizeRoleName($title, 'ilias_role_' . $roleId);
+		$title = ilObject::_lookupTitle($roleId);
+		$name = $this->normalizeRoleName($title);
 
 		return Role::fromArray(array(
 			'id' => (string)$roleId,
@@ -396,26 +292,32 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		));
 	}
 
-	private function normalizeRoleName(string $title, string $fallback): string {
+	private function normalizeRoleName(string $title): string {
 		$name = strtolower(trim($title));
-		$name = preg_replace('/[^a-z0-9_]+/', '_', $name) ?? '';
+		$name = preg_replace('/[^a-z0-9]+/', '_', $name) ?: '';
 		$name = trim($name, '_');
 
-		return $name !== '' ? $name : $fallback;
+		return $name !== '' ? $name : 'role';
 	}
 
-	private function containsRoleName(array $roles, string $name): bool {
-		$name = strtolower(trim($name));
+	private function getRefIdFromPermissionTarget($target): int {
+		if (is_int($target) && $target > 0) return $target;
 
-		foreach ($roles as $role) {
-			if (strtolower(trim((string)$role->name)) === $name) return true;
+		if (is_string($target) && is_numeric($target) && (int)$target > 0) {
+			return (int)$target;
 		}
 
-		return false;
+		return 0;
 	}
 
 	private function canAccessIliasRefId(int $userId, int $refId, string $operation): bool {
-		if ($this->isAdministrator($userId)) return true;
+		$operation = strtolower(trim($operation));
+		if ($userId <= 0 || $refId <= 0 || $operation === '') return false;
+
+		if ($this->rbacsystem != null && $userId === $this->getCurrentUserId()) {
+			return (bool)$this->rbacsystem->checkAccess($operation, $refId);
+		}
+
 		if ($this->rbacreview == null) return false;
 
 		$operationId = (int)ilRbacReview::_getOperationIdByName($operation);
@@ -442,9 +344,11 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$seen = array();
 
 		foreach ($permissions as $permission) {
-			$key = strtolower(trim((string)$permission->scope)) . ':' . strtolower(trim((string)$permission->permission));
-			if ($key === ':') continue;
-			if (isset($seen[$key])) continue;
+			$scope = strtolower(trim((string)$permission->scope));
+			$name = strtolower(trim((string)$permission->permission));
+			$key = $scope . '/' . $name;
+
+			if ($scope === '' || $name === '' || isset($seen[$key])) continue;
 
 			$seen[$key] = true;
 			$out[] = $permission;
