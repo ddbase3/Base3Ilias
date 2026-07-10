@@ -3,12 +3,14 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Api\IClassMap;
+use Base3\Api\IComponentResolver;
 use Base3\Api\IContainer;
 use Base3\Api\IPlugin;
 use Base3\Api\IRequest;
 use Base3\Api\ISystemService;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\Core\Autoloader;
+use Base3\Core\ComponentResolver;
 use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
 use Base3\Hook\HookManager;
@@ -79,13 +81,14 @@ class Base3IliasRuntime {
 		$servicelocator = new Base3IliasServiceLocator();
 		ServiceLocator::useInstance($servicelocator);
 		$servicelocator
-			->set('servicelocator', $servicelocator, IContainer::SHARED)
+			->set(IContainer::class, $servicelocator, IContainer::SHARED)
+			->set('servicelocator', IContainer::class, IContainer::ALIAS)
 			->set(ISystemService::class, $systemService, IContainer::SHARED)
 			->set(IRequest::class, $request, IContainer::SHARED)
-			->set(IContainer::class, 'servicelocator', IContainer::ALIAS)
 			->set(IHookManager::class, fn() => new HookManager(), ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set('classmap', IClassMap::class, IContainer::ALIAS)
+                        ->set(IComponentResolver::class, fn($c) => new ComponentResolver($c->get(IContainer::class), $c->get(IClassMap::class)), IContainer::SHARED)
 			->set(IMigrationRunner::class, fn() => new NoMigrationRunner(), IContainer::SHARED)
 			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED)
 			->set(ILinkTargetService::class, fn($c) => new Base3IliasLinkTargetService($c->get(IConfiguration::class)), IContainer::SHARED);
