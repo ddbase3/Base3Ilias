@@ -54,6 +54,9 @@ class Base3IliasSettings implements IBase3IliasSettings {
 						'name' => 'configurationadmindisplay',
 						'label' => 'Configuration'
 					], [
+						'name' => 'usermanagerdebugdisplay',
+						'label' => 'User Manager'
+					], [
 						'name' => 'statestoreadmindisplay',
 						'label' => 'State Store'
 					], [
