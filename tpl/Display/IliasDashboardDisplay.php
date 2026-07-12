@@ -114,7 +114,12 @@
 
 		<div class="dashboard-tool-grid">
 			<?php foreach ((array)$this->_['quickLinks'] as $link): ?>
-				<a class="dashboard-tool-card dashboard-tool-<?php echo htmlspecialchars((string)$link['type']); ?>" href="<?php echo htmlspecialchars((string)$link['url']); ?>">
+				<a
+					class="dashboard-tool-card dashboard-tool-<?php echo htmlspecialchars((string)$link['type']); ?>"
+					href="<?php echo htmlspecialchars((string)$link['url']); ?>"
+					data-base3-tab-link
+					data-base3-tab-target="<?php echo htmlspecialchars((string)$link['command']); ?>"
+				>
 					<strong><?php echo htmlspecialchars((string)$link['title']); ?></strong>
 					<span><?php echo htmlspecialchars((string)$link['description']); ?></span>
 					<em><?php echo htmlspecialchars((string)$link['command']); ?></em>

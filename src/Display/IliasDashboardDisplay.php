@@ -4,6 +4,7 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\LinkTarget\Api\ILinkTargetService;
 use ilCtrl;
 use ilIniFile;
 use ilObject;
@@ -17,7 +18,8 @@ final class IliasDashboardDisplay implements IDisplay {
 		private readonly ilIniFile $ilIliasIniFile,
 		private readonly ilObjUser $ilUser,
 		private readonly ilRbacReview $rbacreview,
-		private readonly ilCtrl $ilCtrl
+		private readonly ilCtrl $ilCtrl,
+		private readonly ILinkTargetService $linkTargetService
 	) {}
 
 	public static function getName(): string {
@@ -177,7 +179,10 @@ final class IliasDashboardDisplay implements IDisplay {
 			'description' => $description,
 			'command' => $command,
 			'type' => $type,
-			'url' => $this->buildIliasCommandLink($command),
+			'url' => $this->linkTargetService->getLink([
+				'name' => $command,
+				'out' => 'html',
+			]),
 		];
 	}
 
@@ -218,34 +223,6 @@ final class IliasDashboardDisplay implements IDisplay {
 		}
 
 		return $out;
-	}
-
-	private function buildIliasCommandLink(string $command): string {
-		$params = $this->getQueryParams();
-
-		$params['cmd'] = $command;
-
-		unset($params['action']);
-		unset($params['out']);
-		unset($params['name']);
-		unset($params['file']);
-		unset($params['num']);
-		unset($params['base3_target_ref_id']);
-		unset($params['base3_user_id']);
-		unset($params['base3_object_ref_id']);
-		unset($params['base3_user_login']);
-
-		$path = parse_url($this->serverValue('REQUEST_URI'), PHP_URL_PATH);
-
-		if (!is_string($path) || $path === '') {
-			$path = $this->serverValue('SCRIPT_NAME');
-		}
-
-		if ($path === '') {
-			$path = 'ilias.php';
-		}
-
-		return $path . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 	}
 
 	private function checkDirectory(string $label, string $path, bool $mustBeReadable, bool $mustBeWritable): array {
@@ -545,13 +522,6 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function read(string $section, string $key): string {
 		return trim((string)$this->ilIliasIniFile->readVariable($section, $key));
-	}
-
-	private function getQueryParams(): array {
-		$params = [];
-		parse_str($this->serverValue('QUERY_STRING'), $params);
-
-		return $params;
 	}
 
 	private function resolvePath(string $basePath, string $path): string {
