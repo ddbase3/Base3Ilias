@@ -3,18 +3,19 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Language\Api\ILanguage;
+use ilObject;
+use ilObjLanguage;
 
 /**
  * Class Base3IliasLanguage
  *
- * Maps Base3 language service to the ILIAS user language preference.
+ * Maps the BASE3 language service to the ILIAS language configuration.
  *
- * Primary goal:
- * - Provide the logged-in user's chosen language for UI rendering.
+ * The current language is taken from the logged-in ILIAS user.
+ * Available languages are derived from the languages installed in ILIAS.
  *
- * Notes:
- * - setLanguage() is intentionally a no-op for now (would require persistence).
- * - getLanguages() returns best-effort list (fallback: current language only).
+ * setLanguage() is intentionally a no-op because persisting or changing
+ * the user's language is currently outside the scope of this adapter.
  */
 final class Base3IliasLanguage implements ILanguage {
 
@@ -25,9 +26,9 @@ final class Base3IliasLanguage implements ILanguage {
 		global $DIC;
 
 		if (isset($DIC) && method_exists($DIC, 'user') && $DIC->user()) {
-			$lang = (string) $DIC->user()->getLanguage();
-			if ($lang !== '') {
-				return $lang;
+			$language = (string) $DIC->user()->getLanguage();
+			if ($language !== '') {
+				return $language;
 			}
 		}
 
@@ -35,14 +36,39 @@ final class Base3IliasLanguage implements ILanguage {
 	}
 
 	public function setLanguage(string $language) {
-		// Intentionally not implemented:
-		// Persisting user language is out of scope for this adapter right now.
-		// If you ever want request-scoped switching, this could call:
-		// $DIC->language()->setCurrentLanguage($language);
+		// Intentionally not implemented.
+		// Persisting or changing the ILIAS user language is outside the
+		// current responsibility of this adapter.
 	}
 
 	public function getLanguages(): array {
-		// Out of scope for now. Keep it simple and safe.
-		return [$this->getLanguage()];
+		$languages = [];
+
+		foreach (ilObject::_getObjectsByType('lng') as $languageData) {
+			$objectId = (int)($languageData['obj_id'] ?? 0);
+			if ($objectId <= 0) {
+				continue;
+			}
+
+			$languageObject = new ilObjLanguage($objectId, false);
+			if (!$languageObject->isInstalled()) {
+				continue;
+			}
+
+			$language = trim((string) $languageObject->getKey());
+			if ($language === '') {
+				continue;
+			}
+
+			$languages[$language] = $language;
+		}
+
+		if ($languages === []) {
+			return [$this->getLanguage()];
+		}
+
+		ksort($languages, SORT_STRING);
+
+		return array_values($languages);
 	}
 }
