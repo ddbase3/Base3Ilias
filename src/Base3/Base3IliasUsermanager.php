@@ -297,14 +297,16 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	private function getCurrentUserId(): int {
+		if ($this->accesscontrol != null) {
+			$userId = $this->accesscontrol->getUserId();
+			if ($userId !== null) {
+				return is_numeric($userId) && (int)$userId > 0 ? (int)$userId : 0;
+			}
+		}
+
 		if ($this->ilObjUser != null) {
 			$userId = (int)$this->ilObjUser->getId();
 			if ($userId > 0) return $userId;
-		}
-
-		if ($this->accesscontrol != null) {
-			$userId = $this->accesscontrol->getUserId();
-			if (is_numeric($userId) && (int)$userId > 0) return (int)$userId;
 		}
 
 		if ($this->ilAuthSession != null) {
