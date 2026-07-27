@@ -29,8 +29,8 @@ userid   ILIAS login
 name     ILIAS full display name
 email    ILIAS email
 lang     ILIAS language
-role     BASE3 compatibility value "member"
-roles    effective ILIAS roles mapped as BASE3 Role objects
+role     BASE3 compatibility value "member" or "admin"
+roles    effective ILIAS roles plus the derived BASE3 admin role when applicable
 ```
 
 The anonymous ILIAS user is excluded and returns `null`.
@@ -75,19 +75,46 @@ permissions  empty array
 
 Role checks compare the requested role by ID or by normalized technical name.
 
-## Permissions
+## Global administrator bridge
 
-ILIAS permissions are object-specific. Without a target `ref_id`, there is no correct effective permission list for a user.
+ILIAS uses the global role:
 
-Therefore:
-
-```php
-$usermanager->getPermissions();
+```text
+global_admin
 ```
 
-returns an empty array.
+When that role is present in `assignedGlobalRoles($userId)`, the adapter derives the BASE3 administrator role:
 
-`getAllPermissions()` exposes the available ILIAS operation definitions returned by:
+```text
+id           base3:admin
+name         admin
+label        Administrator
+```
+
+The original ILIAS role `global_admin` remains visible. The derived `admin` role is added as the stable BASE3 role consumed by reusable plugins.
+
+`Developer`, `Tutor`, local roles, and object-level grants do not imply BASE3 system administration.
+
+## Permissions
+
+Normal ILIAS permissions are object-specific. Without a target `ref_id`, there is no correct effective object-permission list for a user.
+
+For a user with the global ILIAS role `global_admin`, the adapter exposes these derived global BASE3 permissions:
+
+```text
+system/admin
+entry/admin
+```
+
+For other users, `getPermissions()` returns an empty array.
+
+Administrative BASE3 code should check:
+
+```php
+$usermanager->can(Permission::for('system', 'admin'));
+```
+
+`getAllPermissions()` includes the derived administrator permissions for an administrator and also exposes the available ILIAS operation definitions returned by:
 
 ```php
 $rbacreview->getOperations();
@@ -145,6 +172,20 @@ operation ID by operation name
 ```
 
 This permits target-specific checks without replacing the current-user state.
+
+## Administrator checks
+
+The adapter grants BASE3 administrator access only when the current user has the global ILIAS role `global_admin`.
+
+The following checks then return `true`:
+
+```php
+$usermanager->hasRole(Role::named('admin'));
+$usermanager->can(Permission::for('system', 'admin'));
+$usermanager->can(Permission::for('entry', 'admin'));
+```
+
+The compatibility field `User::$role` is set to `admin` for the same user.
 
 ## Groups
 

@@ -14,6 +14,8 @@ use ilRbacReview;
 
 class Base3IliasUsermanager implements IUsermanager, ICheck {
 
+	private const ILIAS_ADMIN_ROLE_NAME = 'global_admin';
+
 	private $servicelocator;
 	private $accesscontrol;
 	private $ilAuthSession;
@@ -103,10 +105,11 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getPermissions() {
 		if ($this->permissions !== null) return $this->permissions;
 
-		// ILIAS permissions are object-specific. Without a target ref_id there is no
-		// correct effective permission list for the current user. Use can() with
-		// Permission::for('ilias', '<operation>', <ref_id>) for concrete checks.
-		$this->permissions = array();
+		$userId = $this->getCurrentUserId();
+		$this->permissions = $this->isAdministrator($userId)
+			? $this->getAdministratorPermissions()
+			: array();
+
 		return $this->permissions;
 	}
 
@@ -117,6 +120,10 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 
 		$wantedId = trim((string)$role->id);
 		$wantedName = strtolower(trim((string)$role->name));
+
+		if ($wantedName === 'admin') {
+			return $this->isAdministrator($userId);
+		}
 
 		foreach ($this->getRoles() as $currentRole) {
 			$currentId = trim((string)$currentRole->id);
@@ -138,6 +145,11 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$operation = strtolower(trim((string)$permission->permission));
 
 		if ($scope === '' || $operation === '') return false;
+
+		if (($scope === 'system' && $operation === 'admin')
+			|| ($scope === 'entry' && $operation === 'admin')) {
+			return $this->isAdministrator($userId);
+		}
 
 		if ($scope === 'ilias') {
 			$refId = $this->getRefIdFromPermissionTarget($permission->target);
@@ -175,7 +187,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getAllPermissions() {
 		if ($this->allPermissions !== null) return $this->allPermissions;
 
-		$permissions = array();
+		$permissions = $this->getPermissions();
 
 		if ($this->rbacreview != null) {
 			foreach ($this->rbacreview->getOperations() as $operation) {
@@ -255,7 +267,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$user->name = $fullname;
 		$user->email = ilObjUser::_lookupEmail($userId);
 		$user->lang = ilObjUser::_lookupLanguage($userId);
-		$user->role = 'member';
+		$user->role = $this->getCompatibilityRoleName($userId);
 		$user->roles = $roles;
 
 		return $user;
@@ -275,6 +287,10 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 
 		foreach ($roleIds as $roleId) {
 			$roles[] = $this->createRoleFromIliasRoleId($roleId, in_array($roleId, $globalRoleIds, true));
+		}
+
+		if ($this->isAdministrator($userId) && !$this->containsRoleName($roles, 'admin')) {
+			$roles[] = $this->createAdministratorRole();
 		}
 
 		return $roles;
@@ -310,6 +326,61 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		return $userId === 13;
 	}
 
+	private function isAdministrator(int $userId): bool {
+		if ($userId <= 0 || $this->isAnonymousUser($userId) || $this->rbacreview == null) {
+			return false;
+		}
+
+		$globalRoleIds = array_map('intval', $this->rbacreview->assignedGlobalRoles($userId));
+
+		foreach ($globalRoleIds as $roleId) {
+			$title = (string)ilObject::_lookupTitle($roleId);
+
+			if ($this->normalizeRoleName($title) === self::ILIAS_ADMIN_ROLE_NAME) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private function getCompatibilityRoleName(int $userId): string {
+		if ($userId <= 0 || $this->isAnonymousUser($userId)) return 'visit';
+		if ($this->isAdministrator($userId)) return 'admin';
+
+		return 'member';
+	}
+
+	private function createAdministratorRole(): Role {
+		return Role::fromArray(array(
+			'id' => 'base3:admin',
+			'name' => 'admin',
+			'label' => 'Administrator',
+			'info' => 'Derived from the global ILIAS role global_admin.',
+			'archive' => 0,
+			'permissions' => $this->getAdministratorPermissions()
+		));
+	}
+
+	private function getAdministratorPermissions(): array {
+		return array(
+			Permission::fromArray(array(
+				'scope' => 'system',
+				'permission' => 'admin',
+				'label' => 'System administration',
+				'info' => 'Derived from the global ILIAS role global_admin.',
+				'archive' => 0
+			)),
+			Permission::fromArray(array(
+				'scope' => 'entry',
+				'permission' => 'admin',
+				'label' => 'Entry administration',
+				'info' => 'Allows BASE3 entry-admin bypass in embedded ILIAS runtimes.',
+				'archive' => 0
+			))
+		);
+	}
+
 	private function createRoleFromIliasRoleId(int $roleId, bool $global): Role {
 		$title = ilObject::_lookupTitle($roleId);
 		$name = $this->normalizeRoleName($title);
@@ -330,6 +401,16 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		$name = trim($name, '_');
 
 		return $name !== '' ? $name : 'role';
+	}
+
+	private function containsRoleName(array $roles, string $name): bool {
+		$name = strtolower(trim($name));
+
+		foreach ($roles as $role) {
+			if (strtolower(trim((string)$role->name)) === $name) return true;
+		}
+
+		return false;
 	}
 
 	private function getRefIdFromPermissionTarget($target): int {
