@@ -61,24 +61,21 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		if ($userId <= 0 || $this->isAnonymousUser($userId)) return null;
 		if (!$this->userExists($userId)) return null;
 
-		$name = ilObjUser::_lookupName($userId);
-		$login = ilObjUser::_lookupLogin($userId);
-		$fullname = trim(trim((string)($name['title'] ?? '')) . ' ' . trim((string)($name['firstname'] ?? '')) . ' ' . trim((string)($name['lastname'] ?? '')));
-
-		if ($fullname === '') {
-			$fullname = $login;
-		}
-
-		$this->user = new User();
-		$this->user->id = (string)$userId;
-		$this->user->userid = $login;
-		$this->user->name = $fullname;
-		$this->user->email = ilObjUser::_lookupEmail($userId);
-		$this->user->lang = ilObjUser::_lookupLanguage($userId);
-		$this->user->role = 'member';
-		$this->user->roles = $this->getRoles();
+		$this->user = $this->createUser($userId, $this->getRoles());
 
 		return $this->user;
+	}
+
+	public function getUserById(int|string $id): ?User {
+		$userId = $this->normalizeUserId($id);
+		if ($userId === null || $this->isAnonymousUser($userId)) return null;
+		if (!$this->userExists($userId)) return null;
+
+		if ($this->user instanceof User && (int)$this->user->id === $userId) {
+			return $this->user;
+		}
+
+		return $this->createUser($userId, $this->getRolesForUserId($userId));
 	}
 
 	public function getGroups() {
@@ -99,18 +96,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 			return $this->roles;
 		}
 
-		$roleIds = array_map('intval', $this->rbacreview->assignedRoles($userId));
-		$globalRoleIds = array_map('intval', $this->rbacreview->assignedGlobalRoles($userId));
-		$roleIds = array_values(array_unique($roleIds));
-		sort($roleIds);
-
-		$roles = array();
-
-		foreach ($roleIds as $roleId) {
-			$roles[] = $this->createRoleFromIliasRoleId($roleId, in_array($roleId, $globalRoleIds, true));
-		}
-
-		$this->roles = $roles;
+		$this->roles = $this->getRolesForUserId($userId);
 		return $this->roles;
 	}
 
@@ -247,6 +233,52 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	// Private methods
+
+	private function normalizeUserId(int|string $id): ?int {
+		if (!is_numeric($id) || (int)$id <= 0) return null;
+
+		return (int)$id;
+	}
+
+	private function createUser(int $userId, array $roles): User {
+		$name = ilObjUser::_lookupName($userId);
+		$login = ilObjUser::_lookupLogin($userId);
+		$fullname = trim(trim((string)($name['title'] ?? '')) . ' ' . trim((string)($name['firstname'] ?? '')) . ' ' . trim((string)($name['lastname'] ?? '')));
+
+		if ($fullname === '') {
+			$fullname = $login;
+		}
+
+		$user = new User();
+		$user->id = (string)$userId;
+		$user->userid = $login;
+		$user->name = $fullname;
+		$user->email = ilObjUser::_lookupEmail($userId);
+		$user->lang = ilObjUser::_lookupLanguage($userId);
+		$user->role = 'member';
+		$user->roles = $roles;
+
+		return $user;
+	}
+
+	private function getRolesForUserId(int $userId): array {
+		if ($userId <= 0 || $this->isAnonymousUser($userId) || $this->rbacreview == null) {
+			return array();
+		}
+
+		$roleIds = array_map('intval', $this->rbacreview->assignedRoles($userId));
+		$globalRoleIds = array_map('intval', $this->rbacreview->assignedGlobalRoles($userId));
+		$roleIds = array_values(array_unique($roleIds));
+		sort($roleIds);
+
+		$roles = array();
+
+		foreach ($roleIds as $roleId) {
+			$roles[] = $this->createRoleFromIliasRoleId($roleId, in_array($roleId, $globalRoleIds, true));
+		}
+
+		return $roles;
+	}
 
 	private function getCurrentUserId(): int {
 		if ($this->ilObjUser != null) {
