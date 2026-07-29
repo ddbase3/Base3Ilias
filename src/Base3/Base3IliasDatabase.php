@@ -11,157 +11,284 @@ use ilDBInterface;
  * Adapter that maps the BASE3 IDatabase interface to the ILIAS database service (ilDBInterface).
  *
  * Notes / limitations:
- * - ILIAS DB is managed by the global DIC; "connect" / "disconnect" are effectively no-ops here.
- * - affectedRows() and insertId() are not reliably available via ilDBInterface in a backend-agnostic way,
- *   so these methods return safe defaults.
- * - Error handling: ILIAS typically throws exceptions on failures; therefore isError()/errorNumber()/errorMessage()
- *   return default values.
- * - Transactions: ilDBInterface transaction return values are not used as success indicators. ILIAS exceptions
- *   propagate to the caller and are mapped by the surrounding BASE3 transaction handling.
+ * - ILIAS manages the database connection lifecycle via DIC; connect() validates availability and
+ *   disconnect() is a no-op.
+ * - affectedRows() contains the result of the latest nonQuery() call.
+ * - insertId() uses the MySQL/MariaDB connection-local LAST_INSERT_ID() value. Before every nonQuery()
+ *   this value is reset to 0, so non-insert statements cannot expose a stale ID.
+ * - Database exceptions are recorded for isError()/errorNumber()/errorMessage() and rethrown unchanged.
+ * - Transaction return values are checked; failed transaction operations are exposed as exceptions.
  */
 class Base3IliasDatabase implements IDatabase {
 
-        /**
-         * @var ilDBInterface|null
-         */
-        private ?ilDBInterface $db = null;
+	/**
+	 * @var ilDBInterface|null
+	 */
+	private ?ilDBInterface $db = null;
 
-        public function __construct() {
-                global $DIC;
+	private int $lastAffectedRows = 0;
+	private int|string $lastInsertId = 0;
+	private ?\Throwable $lastError = null;
 
-                if($DIC !== null && $DIC->database() !== null) {
-                        $this->db = $DIC->database();
-                }
-        }
+	public function __construct() {
+		global $DIC;
 
-        public function connect(): void {
-                // ILIAS manages the DB connection lifecycle via DIC.
-                // Keeping this method as a no-op satisfies the lazy-connect contract.
-        }
+		if($DIC !== null && $DIC->database() !== null) {
+			$this->db = $DIC->database();
+		}
+	}
 
-        public function connected(): bool {
-                global $DIC;
-                return $DIC !== null && $DIC->database() !== null;
-        }
+	public function connect(): void {
+		$this->clearError();
 
-        public function disconnect(): void {
-                // ILIAS manages the DB connection lifecycle via DIC.
-                // There is no reliable way to close it here without side effects.
-        }
+		try {
+			$this->requireDb();
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		}
+	}
 
-        public function beginTransaction(): void {
-                $this->requireDb();
-                $this->db->beginTransaction();
-        }
+	public function connected(): bool {
+		return $this->db !== null;
+	}
 
-        public function commit(): void {
-                $this->requireDb();
-                $this->db->commit();
-        }
+	public function disconnect(): void {
+		// ILIAS manages the DB connection lifecycle via DIC.
+		// Closing the shared connection here would affect the complete request.
+	}
 
-        public function rollback(): void {
-                $this->requireDb();
-                $this->db->rollback();
-        }
+	public function beginTransaction(): void {
+		$this->clearError();
 
-        public function nonQuery(string $query): void {
-                $this->requireDb();
-                $this->db->manipulate($query);
-        }
+		try {
+			$this->requireDb();
 
-        public function scalarQuery(string $query): mixed {
-                $this->requireDb();
+			if(!$this->db->beginTransaction()) {
+				throw new \RuntimeException('ILIAS failed to begin the database transaction.');
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		}
+	}
 
-                $stmt = $this->db->query($query);
-                $row = $this->db->fetchAssoc($stmt);
+	public function commit(): void {
+		$this->clearError();
 
-                if(!$row) {
-                        return null;
-                }
+		try {
+			$this->requireDb();
 
-                $values = array_values($row);
-                return $values[0] ?? null;
-        }
+			if(!$this->db->commit()) {
+				throw new \RuntimeException('ILIAS failed to commit the database transaction.');
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		}
+	}
 
-        public function singleQuery(string $query): ?array {
-                $this->requireDb();
+	public function rollback(): void {
+		$this->clearError();
 
-                $stmt = $this->db->query($query);
-                $row = $this->db->fetchAssoc($stmt);
+		try {
+			$this->requireDb();
 
-                return $row ?: null;
-        }
+			if(!$this->db->rollback()) {
+				throw new \RuntimeException('ILIAS failed to roll back the database transaction.');
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		}
+	}
 
-        public function &listQuery(string $query): array {
-                $this->requireDb();
+	public function nonQuery(string $query): void {
+		$this->resetStatementState();
 
-                $stmt = $this->db->query($query);
-                $list = [];
+		try {
+			$this->requireDb();
+			$this->resetConnectionInsertId();
 
-                while($row = $this->db->fetchAssoc($stmt)) {
-                        $values = array_values($row);
-                        $list[] = $values[0] ?? null;
-                }
+			$this->lastAffectedRows = $this->db->manipulate($query);
+			$this->lastInsertId = $this->readConnectionInsertId();
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		}
+	}
 
-                $this->db->free($stmt);
-                return $list;
-        }
+	public function scalarQuery(string $query): mixed {
+		$this->resetStatementState();
+		$stmt = null;
+		$value = null;
 
-        public function &multiQuery(string $query): array {
-                $this->requireDb();
+		try {
+			$this->requireDb();
 
-                $stmt = $this->db->query($query);
-                $rows = [];
+			$stmt = $this->db->query($query);
+			$row = $this->db->fetchAssoc($stmt);
 
-                while($row = $this->db->fetchAssoc($stmt)) {
-                        $rows[] = $row;
-                }
+			if($row) {
+				$values = array_values($row);
+				$value = $values[0] ?? null;
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		} finally {
+			if($stmt !== null && $this->db !== null) {
+				$this->db->free($stmt);
+			}
+		}
 
-                $this->db->free($stmt);
-                return $rows;
-        }
+		return $value;
+	}
 
-        public function affectedRows(): int {
-                // ilDBInterface does not expose a consistent affected-rows method across drivers.
-                // Returning 0 is a safe default (caller must not rely on it for ILIAS adapter).
-                return 0;
-        }
+	public function singleQuery(string $query): ?array {
+		$this->resetStatementState();
+		$stmt = null;
+		$row = null;
 
-        public function insertId(): int|string {
-                // ilDBInterface does not provide a consistent "last insert id" accessor across drivers.
-                // Returning 0 is a safe default (caller must not rely on it for ILIAS adapter).
-                return 0;
-        }
+		try {
+			$this->requireDb();
 
-        public function escape(string $str): string {
-                // Escapes to a quoted-safe fragment; callers still add surrounding quotes themselves.
-                $str = str_replace(
-                        ["\\", "\x00", "\n", "\r", "'", '"', "\x1a"],
-                        ["\\\\", "\\0", "\\n", "\\r", "\\'", '\\"', "\\Z"],
-                        $str
-                );
+			$stmt = $this->db->query($query);
+			$row = $this->db->fetchAssoc($stmt);
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		} finally {
+			if($stmt !== null && $this->db !== null) {
+				$this->db->free($stmt);
+			}
+		}
 
-                return $str;
-        }
+		return $row ?: null;
+	}
 
-        public function isError(): bool {
-                // ILIAS DB layer usually throws exceptions on error, so there is no persistent error flag.
-                return false;
-        }
+	public function &listQuery(string $query): array {
+		$this->resetStatementState();
+		$stmt = null;
+		$list = [];
 
-        public function errorNumber(): int {
-                // Not available via ilDBInterface in a portable way.
-                return 0;
-        }
+		try {
+			$this->requireDb();
 
-        public function errorMessage(): string {
-                // Not available via ilDBInterface in a portable way.
-                return '';
-        }
+			$stmt = $this->db->query($query);
 
-        private function requireDb(): void {
-                if($this->db === null) {
-                        throw new \RuntimeException('ILIAS database service is not available (DIC/database is null).');
-                }
-        }
+			while($row = $this->db->fetchAssoc($stmt)) {
+				$values = array_values($row);
+				$list[] = $values[0] ?? null;
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		} finally {
+			if($stmt !== null && $this->db !== null) {
+				$this->db->free($stmt);
+			}
+		}
+
+		return $list;
+	}
+
+	public function &multiQuery(string $query): array {
+		$this->resetStatementState();
+		$stmt = null;
+		$rows = [];
+
+		try {
+			$this->requireDb();
+
+			$stmt = $this->db->query($query);
+
+			while($row = $this->db->fetchAssoc($stmt)) {
+				$rows[] = $row;
+			}
+		} catch(\Throwable $error) {
+			$this->rememberError($error);
+			throw $error;
+		} finally {
+			if($stmt !== null && $this->db !== null) {
+				$this->db->free($stmt);
+			}
+		}
+
+		return $rows;
+	}
+
+	public function affectedRows(): int {
+		return $this->lastAffectedRows;
+	}
+
+	public function insertId(): int|string {
+		return $this->lastInsertId;
+	}
+
+	public function escape(string $str): string {
+		// Escapes to a quoted-safe fragment; callers still add surrounding quotes themselves.
+		$str = str_replace(
+			["\\", "\x00", "\n", "\r", "'", '"', "\x1a"],
+			["\\\\", "\\0", "\\n", "\\r", "\\'", '\\"', "\\Z"],
+			$str
+		);
+
+		return $str;
+	}
+
+	public function isError(): bool {
+		return $this->lastError !== null;
+	}
+
+	public function errorNumber(): int {
+		return $this->lastError !== null ? (int)$this->lastError->getCode() : 0;
+	}
+
+	public function errorMessage(): string {
+		return $this->lastError?->getMessage() ?? '';
+	}
+
+	private function resetConnectionInsertId(): void {
+		$stmt = $this->db->query('SELECT LAST_INSERT_ID(0) AS insert_id');
+		$this->db->free($stmt);
+	}
+
+	private function readConnectionInsertId(): int|string {
+		$stmt = $this->db->query('SELECT LAST_INSERT_ID() AS insert_id');
+
+		try {
+			$row = $this->db->fetchAssoc($stmt);
+		} finally {
+			$this->db->free($stmt);
+		}
+
+		$value = $row['insert_id'] ?? 0;
+
+		if(is_int($value) || is_string($value)) {
+			return $value;
+		}
+
+		return (int)$value;
+	}
+
+	private function resetStatementState(): void {
+		$this->lastAffectedRows = 0;
+		$this->lastInsertId = 0;
+		$this->lastError = null;
+	}
+
+	private function clearError(): void {
+		$this->lastError = null;
+	}
+
+	private function rememberError(\Throwable $error): void {
+		$this->lastError = $error;
+	}
+
+	private function requireDb(): void {
+		if($this->db === null) {
+			throw new \RuntimeException('ILIAS database service is not available (DIC/database is null).');
+		}
+	}
 }
