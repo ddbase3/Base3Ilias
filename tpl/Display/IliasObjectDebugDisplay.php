@@ -1,39 +1,46 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-object">
-	<h3>ILIAS Object Debug</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS object debug')); ?></h3>
 
 	<div class="object-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilObject + ilTree</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilObject + ilTree</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<div class="object-actions">
 		<label class="object-ref">
-			Target ref_id:
+			<?php echo htmlspecialchars($t('target_ref_id_input', 'Target ref_id:')); ?>
 			<input type="number" id="object-target-ref-id" value="<?php echo (int)$this->_['targetRefId']; ?>" min="1">
 		</label>
 
-		<button type="button" onclick="objectApplyParams()">Prüfen</button>
+		<button type="button" onclick="objectApplyParams()"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
 
 		<div class="object-note">
-			Verwendet eigenen URL-Parameter:
+			<?php echo htmlspecialchars($t('uses_own_url_parameter', 'Uses its own URL parameter:')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['targetParamName']); ?></span>.
-			<span class="mono">ref_id</span> wird nicht verändert.
+			<span class="mono">ref_id</span> <?php echo htmlspecialchars($t('ref_id_unchanged', 'is not changed.')); ?>
 		</div>
 	</div>
 
 	<div class="object-section">
 		<div class="object-section-head">
-			<h4>Object</h4>
-			<div class="object-description">Basisdaten zum Zielobjekt.</div>
+			<h4><?php echo htmlspecialchars($t('object_title', 'Object')); ?></h4>
+			<div class="object-description"><?php echo htmlspecialchars($t('object_description', 'Basic data for the target object.')); ?></div>
 		</div>
 
 		<div class="object-tablewrap">
 			<table class="object-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -57,22 +64,22 @@
 
 	<div class="object-section">
 		<div class="object-section-head">
-			<h4>Repository Path</h4>
-			<div class="object-description">Pfad vom Repository-Root bis zum Zielobjekt.</div>
+			<h4><?php echo htmlspecialchars($t('repository_path_title', 'Repository path')); ?></h4>
+			<div class="object-description"><?php echo htmlspecialchars($t('repository_path_description', 'Path from the repository root to the target object.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['pathRows'])): ?>
-			<div class="object-empty">Kein Pfad vorhanden oder kein Target ref_id angegeben.</div>
+			<div class="object-empty"><?php echo htmlspecialchars($t('no_path_or_target', 'No path is available or no target ref_id was specified.')); ?></div>
 		<?php else: ?>
 			<div class="object-tablewrap">
 				<table class="object-table">
 					<thead>
 						<tr>
-							<th>Depth</th>
-							<th>Ref ID</th>
-							<th>Obj ID</th>
-							<th>Type</th>
-							<th>Title</th>
+							<th><?php echo htmlspecialchars($t('column_depth', 'Depth')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_ref_id', 'Ref ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_obj_id', 'Obj ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -99,22 +106,22 @@
 
 	<div class="object-section">
 		<div class="object-section-head">
-			<h4>Direct Children</h4>
-			<div class="object-description">Direkte Kinder des Zielobjekts, begrenzt auf <?php echo (int)$this->_['maxChildren']; ?> Einträge.</div>
+			<h4><?php echo htmlspecialchars($t('direct_children_title', 'Direct children')); ?></h4>
+			<div class="object-description"><?php echo htmlspecialchars($t('direct_children_description', 'Direct children of the target object, limited to')); ?> <?php echo (int)$this->_['maxChildren']; ?> <?php echo htmlspecialchars($t('entries_noun', 'entries.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['childRows'])): ?>
-			<div class="object-empty">Keine direkten Kinder gefunden oder kein Target ref_id angegeben.</div>
+			<div class="object-empty"><?php echo htmlspecialchars($t('no_children_or_target', 'No direct children were found or no target ref_id was specified.')); ?></div>
 		<?php else: ?>
 			<div class="object-tablewrap">
 				<table class="object-table">
 					<thead>
 						<tr>
-							<th>Ref ID</th>
-							<th>Obj ID</th>
-							<th>Type</th>
-							<th>Title</th>
-							<th>Description</th>
+							<th><?php echo htmlspecialchars($t('column_ref_id', 'Ref ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_obj_id', 'Obj ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_description', 'Description')); ?></th>
 						</tr>
 					</thead>
 					<tbody>

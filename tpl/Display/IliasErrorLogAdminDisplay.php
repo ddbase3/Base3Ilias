@@ -1,25 +1,32 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-errorlog">
-	<h3>ILIAS Error Logs</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS error logs')); ?></h3>
 
 	<div class="errorlog-meta">
-		<div><strong>Quelle:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['errorPath']); ?></span></div>
-		<div><strong>Letztes Update:</strong> <span id="errorlog-lastupdate" class="mono">–</span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['errorPath']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('last_update', 'Last update:')); ?></strong> <span id="errorlog-lastupdate" class="mono">–</span></div>
 	</div>
 
 	<div class="errorlog-actions">
 		<label class="errorlog-num">
-			Dateien:
+			<?php echo htmlspecialchars($t('files', 'Files:')); ?>
 			<input type="number" id="errorlog-num" min="1" max="<?php echo (int)$this->_['maxFiles']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" onchange="errorLogRefresh(true)">
 		</label>
 
-		<button type="button" onclick="errorLogRefresh(true)">Jetzt aktualisieren</button>
+		<button type="button" onclick="errorLogRefresh(true)"><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
 
 		<label class="errorlog-autorefresh">
 			<input type="checkbox" id="errorlog-autorefresh" checked onchange="errorLogToggleAutoRefresh()">
-			Auto-Refresh (3s)
+			<?php echo htmlspecialchars($t('auto_refresh', 'Auto-refresh (3s)')); ?>
 		</label>
 
-		<label id="errorlog-loading">Bitte warten…</label>
+		<label id="errorlog-loading"><?php echo htmlspecialchars($t('please_wait', 'Please wait…')); ?></label>
 	</div>
 
 	<div id="errorlog-message" class="errorlog-message" style="display: none;"></div>
@@ -28,10 +35,10 @@
 		<table class="errorlog-table">
 			<thead>
 				<tr>
-					<th>Datei</th>
-					<th>Größe</th>
-					<th>Geändert</th>
-					<th>Lesbar</th>
+					<th><?php echo htmlspecialchars($t('column_file', 'File')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_size', 'Size')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_modified', 'Modified')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_readable', 'Readable')); ?></th>
 				</tr>
 			</thead>
 			<tbody id="errorlog-files-body">
@@ -269,6 +276,20 @@
 </style>
 
 <script>
+	const ERRORLOG_I18N = <?php echo json_encode([
+		'yes' => $t('value_yes', 'yes'),
+		'no' => $t('value_no', 'no'),
+		'no_files' => $t('no_files_found', 'No error log files found.'),
+		'loading_file' => $t('loading_file', 'Loading file…'),
+		'truncated' => $t('file_truncated', 'The file is larger than the display area. Only the end of the file is shown.'),
+		'file' => $t('column_file', 'File'),
+		'size' => $t('column_size', 'Size'),
+		'read' => $t('read_bytes', 'Read'),
+		'modified' => $t('column_modified', 'Modified'),
+		'invalid_json' => $t('invalid_json', 'The response could not be parsed as JSON.'),
+		'file_load_failed' => $t('file_load_failed', 'The file could not be loaded.'),
+		'list_load_failed' => $t('list_load_failed', 'The error log files could not be loaded.')
+	], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 	const ERRORLOG_ENDPOINT = <?php echo json_encode((string)$this->_['endpoint']); ?>;
 
 	let errorLogTimer = null;
@@ -302,10 +323,10 @@
 
 	function errorLogReadablePill(readable) {
 		if (readable) {
-			return '<span class="errorlog-pill info">yes</span>';
+			return '<span class="errorlog-pill info">' + errorLogEsc(ERRORLOG_I18N.yes) + '</span>';
 		}
 
-		return '<span class="errorlog-pill warning">no</span>';
+		return '<span class="errorlog-pill warning">' + errorLogEsc(ERRORLOG_I18N.no) + '</span>';
 	}
 
 	function errorLogStopAutoRefresh() {
@@ -324,7 +345,7 @@
 		const body = document.getElementById("errorlog-files-body");
 
 		if (errorLogFiles.length === 0) {
-			body.innerHTML = '<tr><td colspan="4" class="errorlog-muted">Keine Error-Dateien gefunden.</td></tr>';
+			body.innerHTML = '<tr><td colspan="4" class="errorlog-muted">' + errorLogEsc(ERRORLOG_I18N.no_files) + '</td></tr>';
 			return;
 		}
 
@@ -366,7 +387,7 @@
 		const cached = errorLogFileCache[file];
 
 		if (!cached || cached.loading) {
-			return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4"><div class="errorlog-muted">Lade Datei…</div></td></tr>';
+			return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4"><div class="errorlog-muted">' + errorLogEsc(ERRORLOG_I18N.loading_file) + '</div></td></tr>';
 		}
 
 		if (cached.error) {
@@ -379,15 +400,15 @@
 
 		let warning = "";
 		if (truncated) {
-			warning = '<div class="errorlog-content-warning">Die Datei ist größer als der Anzeigebereich. Es wird nur das Dateiende angezeigt.</div>';
+			warning = '<div class="errorlog-content-warning">' + errorLogEsc(ERRORLOG_I18N.truncated) + '</div>';
 		}
 
 		return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4">' +
 			'<div class="errorlog-content-head">' +
-				'<span><strong>Datei:</strong> <span class="mono">' + errorLogEsc(data.file || file) + '</span></span>' +
-				'<span><strong>Größe:</strong> <span class="mono">' + errorLogEsc(data.size_formatted || "–") + '</span></span>' +
-				'<span><strong>Gelesen:</strong> <span class="mono">' + errorLogEsc(data.read_bytes_formatted || "–") + '</span></span>' +
-				'<span><strong>Geändert:</strong> <span class="mono">' + errorLogEsc(data.mtime || "–") + '</span></span>' +
+				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.file) + ':</strong> <span class="mono">' + errorLogEsc(data.file || file) + '</span></span>' +
+				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.size) + ':</strong> <span class="mono">' + errorLogEsc(data.size_formatted || "–") + '</span></span>' +
+				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.read) + ':</strong> <span class="mono">' + errorLogEsc(data.read_bytes_formatted || "–") + '</span></span>' +
+				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.modified) + ':</strong> <span class="mono">' + errorLogEsc(data.mtime || "–") + '</span></span>' +
 			'</div>' +
 			warning +
 			'<div class="errorlog-content-box"><pre>' + errorLogEsc(content || "–") + '</pre></div>' +
@@ -436,13 +457,13 @@
 			try {
 				json = JSON.parse(text);
 			} catch (e) {
-				errorLogFileCache[file] = { error: "Die Antwort konnte nicht als JSON gelesen werden." };
+				errorLogFileCache[file] = { error: ERRORLOG_I18N.invalid_json };
 				errorLogRenderFiles(errorLogFiles);
 				return;
 			}
 
 			if (json.status !== "ok") {
-				errorLogFileCache[file] = { error: json.message || "Die Datei konnte nicht geladen werden." };
+				errorLogFileCache[file] = { error: json.message || ERRORLOG_I18N.file_load_failed };
 				errorLogRenderFiles(errorLogFiles);
 				return;
 			}
@@ -456,7 +477,7 @@
 			errorLogFileCache[file] = { data: json.data || {} };
 			errorLogRenderFiles(errorLogFiles);
 		} catch (err) {
-			errorLogFileCache[file] = { error: "Die Datei konnte nicht geladen werden." };
+			errorLogFileCache[file] = { error: ERRORLOG_I18N.file_load_failed };
 			errorLogRenderFiles(errorLogFiles);
 		}
 	}
@@ -481,13 +502,13 @@
 			try {
 				json = JSON.parse(text);
 			} catch (e) {
-				errorLogSetMessage("Die Antwort konnte nicht als JSON gelesen werden.");
+				errorLogSetMessage(ERRORLOG_I18N.invalid_json);
 				errorLogSetLoading(false);
 				return;
 			}
 
 			if (json.status !== "ok") {
-				errorLogSetMessage(json.message || "Die Error-Dateien konnten nicht geladen werden.");
+				errorLogSetMessage(json.message || ERRORLOG_I18N.list_load_failed);
 				errorLogSetLoading(false);
 				return;
 			}
@@ -502,7 +523,7 @@
 
 			errorLogRenderFiles((json.data && json.data.files) ? json.data.files : []);
 		} catch (err) {
-			errorLogSetMessage("Die Error-Dateien konnten nicht geladen werden.");
+			errorLogSetMessage(ERRORLOG_I18N.list_load_failed);
 		}
 
 		errorLogSetLoading(false);

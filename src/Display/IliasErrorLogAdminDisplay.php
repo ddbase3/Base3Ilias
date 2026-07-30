@@ -10,6 +10,8 @@ use ilIniFile;
 
 final class IliasErrorLogAdminDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	private const DEFAULT_NUM = 100;
 	private const MAX_FILES = 500;
 	private const MAX_READ_BYTES = 1048576;
@@ -31,10 +33,13 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS error log file viewer with auto-refresh.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS error log file viewer with auto-refresh.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$out = strtolower((string)$out);
 
 		if ($out === 'json') {
@@ -45,13 +50,13 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 	}
 
 	private function handleHtml(): string {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasErrorLogAdminDisplay.php');
 
 		$this->view->assign('endpoint', $this->buildEndpointBase());
 		$this->view->assign('errorPath', $this->getErrorPath());
 		$this->view->assign('defaultNum', self::DEFAULT_NUM);
 		$this->view->assign('maxFiles', self::MAX_FILES);
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -63,10 +68,10 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 			return match ($action) {
 				'list' => $this->jsonSuccess($this->loadList()),
 				'read' => $this->jsonSuccess($this->loadFile()),
-				default => $this->jsonError("Unknown action '$action'. Use: list, read"),
+				default => $this->jsonError($this->t('unknown_action', "Unknown action '%s'. Use: list, read", $action)),
 			};
 		} catch (\Throwable $e) {
-			return $this->jsonError('Exception: ' . $e->getMessage());
+			return $this->jsonError($this->t('exception', 'Exception: %s', $e->getMessage()));
 		}
 	}
 
@@ -80,7 +85,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => '',
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS error log path is not configured.',
+				'message' => $this->t('path_not_configured', 'ILIAS error log path is not configured.'),
 				'files' => [],
 			];
 		}
@@ -90,7 +95,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS error log path does not exist or is not a directory.',
+				'message' => $this->t('path_missing_or_not_directory', 'ILIAS error log path does not exist or is not a directory.'),
 				'files' => [],
 			];
 		}
@@ -100,7 +105,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS error log path is not readable.',
+				'message' => $this->t('path_not_readable', 'ILIAS error log path is not readable.'),
 				'files' => [],
 			];
 		}
@@ -123,7 +128,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => '',
 				'file' => $file,
 				'readable' => false,
-				'message' => 'ILIAS error log path is not configured.',
+				'message' => $this->t('path_not_configured', 'ILIAS error log path is not configured.'),
 				'content' => '',
 			];
 		}
@@ -133,7 +138,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'file' => '',
 				'readable' => false,
-				'message' => 'No file selected.',
+				'message' => $this->t('no_file_selected', 'No file selected.'),
 				'content' => '',
 			];
 		}
@@ -145,7 +150,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'file' => $file,
 				'readable' => false,
-				'message' => 'Invalid file selection.',
+				'message' => $this->t('invalid_file_selection', 'Invalid file selection.'),
 				'content' => '',
 			];
 		}
@@ -155,7 +160,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'file' => $file,
 				'readable' => false,
-				'message' => 'Selected file does not exist.',
+				'message' => $this->t('selected_file_missing', 'Selected file does not exist.'),
 				'content' => '',
 			];
 		}
@@ -165,7 +170,7 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 				'path' => $errorPath,
 				'file' => $file,
 				'readable' => false,
-				'message' => 'Selected file is not readable.',
+				'message' => $this->t('selected_file_not_readable', 'Selected file is not readable.'),
 				'content' => '',
 			];
 		}
@@ -351,5 +356,27 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 			'timestamp' => gmdate('c'),
 			'message' => $message
 		], JSON_UNESCAPED_UNICODE);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_error_log_admin_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

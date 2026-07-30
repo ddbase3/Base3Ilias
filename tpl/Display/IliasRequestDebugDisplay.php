@@ -1,24 +1,31 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-request">
-	<h3>ILIAS Request Debug</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS request debug')); ?></h3>
 
 	<div class="request-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilCtrl + HTTP request data</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilCtrl + HTTP request data</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<div class="request-section">
 		<div class="request-section-head">
-			<h4>Controller</h4>
-			<div class="request-description">Aktueller ILIAS Controller-Kontext.</div>
+			<h4><?php echo htmlspecialchars($t('controller_title', 'Controller')); ?></h4>
+			<div class="request-description"><?php echo htmlspecialchars($t('controller_description', 'Current ILIAS controller context.')); ?></div>
 		</div>
 
 		<div class="request-tablewrap">
 			<table class="request-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -42,17 +49,17 @@
 
 	<div class="request-section">
 		<div class="request-section-head">
-			<h4>Request</h4>
-			<div class="request-description">Zentrale HTTP-Request-Werte.</div>
+			<h4><?php echo htmlspecialchars($t('request_title', 'Request')); ?></h4>
+			<div class="request-description"><?php echo htmlspecialchars($t('request_description', 'Core HTTP request values.')); ?></div>
 		</div>
 
 		<div class="request-tablewrap">
 			<table class="request-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -76,19 +83,19 @@
 
 	<div class="request-section">
 		<div class="request-section-head">
-			<h4>GET Parameters</h4>
-			<div class="request-description">Aus <span class="mono">QUERY_STRING</span> ermittelte Parameter. Sensible Schlüssel werden maskiert.</div>
+			<h4><?php echo htmlspecialchars($t('get_parameters_title', 'GET parameters')); ?></h4>
+			<div class="request-description"><?php echo htmlspecialchars($t('get_parameters_description_prefix', 'Parameters derived from')); ?> <span class="mono">QUERY_STRING</span>. <?php echo htmlspecialchars($t('sensitive_keys_masked', 'Sensitive keys are masked.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['getRows'])): ?>
-			<div class="request-empty">Keine GET-Parameter.</div>
+			<div class="request-empty"><?php echo htmlspecialchars($t('no_get_parameters', 'No GET parameters.')); ?></div>
 		<?php else: ?>
 			<div class="request-tablewrap">
 				<table class="request-table">
 					<thead>
 						<tr>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -112,19 +119,19 @@
 
 	<div class="request-section">
 		<div class="request-section-head">
-			<h4>POST Parameters</h4>
-			<div class="request-description">Über <span class="mono">filter_input_array(INPUT_POST)</span> ermittelte Parameter. Sensible Schlüssel werden maskiert.</div>
+			<h4><?php echo htmlspecialchars($t('post_parameters_title', 'POST parameters')); ?></h4>
+			<div class="request-description"><?php echo htmlspecialchars($t('post_parameters_description_prefix', 'Parameters obtained through')); ?> <span class="mono">filter_input_array(INPUT_POST)</span>. <?php echo htmlspecialchars($t('sensitive_keys_masked', 'Sensitive keys are masked.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['postRows'])): ?>
-			<div class="request-empty">Keine POST-Parameter.</div>
+			<div class="request-empty"><?php echo htmlspecialchars($t('no_post_parameters', 'No POST parameters.')); ?></div>
 		<?php else: ?>
 			<div class="request-tablewrap">
 				<table class="request-table">
 					<thead>
 						<tr>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -148,19 +155,19 @@
 
 	<div class="request-section">
 		<div class="request-section-head">
-			<h4>Server Parameters</h4>
-			<div class="request-description">Ausgewählte Server-/Header-Werte.</div>
+			<h4><?php echo htmlspecialchars($t('server_parameters_title', 'Server parameters')); ?></h4>
+			<div class="request-description"><?php echo htmlspecialchars($t('server_parameters_description', 'Selected server and header values.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['serverRows'])): ?>
-			<div class="request-empty">Keine Server-Parameter.</div>
+			<div class="request-empty"><?php echo htmlspecialchars($t('no_server_parameters', 'No server parameters.')); ?></div>
 		<?php else: ?>
 			<div class="request-tablewrap">
 				<table class="request-table">
 					<thead>
 						<tr>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>

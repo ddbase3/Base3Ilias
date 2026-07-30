@@ -1,9 +1,16 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-config">
-	<h3>ILIAS Configuration</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS configuration')); ?></h3>
 
 	<div class="config-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilIniFile</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilIniFile</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<?php foreach ((array)$this->_['sections'] as $section): ?>
@@ -19,10 +26,10 @@
 				<table class="config-table">
 					<thead>
 						<tr>
-							<th>Label</th>
-							<th>Section</th>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_section', 'Section')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>

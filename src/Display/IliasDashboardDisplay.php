@@ -13,6 +13,8 @@ use ilRbacReview;
 
 final class IliasDashboardDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	public function __construct(
 		private readonly IMvcView $view,
 		private readonly ilIniFile $ilIliasIniFile,
@@ -31,14 +33,16 @@ final class IliasDashboardDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'Compact ILIAS administration dashboard.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'Compact ILIAS administration dashboard.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$checks = $this->getChecks();
 		$summary = $this->getSummary($checks);
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasDashboardDisplay.php');
 
 		$this->view->assign('generatedAt', date('c'));
@@ -47,6 +51,7 @@ final class IliasDashboardDisplay implements IDisplay {
 		$this->view->assign('quickLinks', $this->getQuickLinks());
 		$this->view->assign('timelineItems', $this->getTimelineItems());
 		$this->view->assign('pathChecks', $this->getPathCheckTiles($checks));
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -63,14 +68,14 @@ final class IliasDashboardDisplay implements IDisplay {
 		$errorPath = $this->read('log', 'error_path');
 
 		return [
-			$this->checkDirectory('ILIAS Root', $absolutePath, true, false),
-			$this->checkDirectory('Client Directory', $clientDirectory, true, false),
-			$this->checkDirectory('Data Directory', $dataDirectory, true, true),
-			$this->checkDirectory('Client Data Directory', $clientDataDirectory, true, true),
-			$this->checkDirectory('Log Directory', $logPath, true, true),
-			$this->checkFile('ILIAS Log', $logFile, true, true),
-			$this->checkDirectory('Error Log Directory', $errorPath, true, true),
-			$this->checkDirectory('Base3Ilias', $this->joinPath(\DIR_COMPONENTS, 'Base3/Base3Ilias'), true, false),
+			$this->checkDirectory($this->t('check_ilias_root', 'ILIAS root'), $absolutePath, true, false),
+			$this->checkDirectory($this->t('check_client_directory', 'Client directory'), $clientDirectory, true, false),
+			$this->checkDirectory($this->t('check_data_directory', 'Data directory'), $dataDirectory, true, true),
+			$this->checkDirectory($this->t('check_client_data_directory', 'Client data directory'), $clientDataDirectory, true, true),
+			$this->checkDirectory($this->t('check_log_directory', 'Log directory'), $logPath, true, true),
+			$this->checkFile($this->t('check_ilias_log', 'ILIAS log'), $logFile, true, true),
+			$this->checkDirectory($this->t('check_error_log_directory', 'Error log directory'), $errorPath, true, true),
+			$this->checkDirectory($this->t('check_base3ilias', 'Base3Ilias'), $this->joinPath(\DIR_COMPONENTS, 'Base3/Base3Ilias'), true, false),
 		];
 	}
 
@@ -88,10 +93,10 @@ final class IliasDashboardDisplay implements IDisplay {
 		return [
 			[
 				'type' => 'health',
-				'title' => 'Systemstatus',
+				'title' => $this->t('card_system_status', 'System status'),
 				'status' => (string)$summary['status'],
 				'value' => (string)$summary['score'] . '%',
-				'meta' => $summary['ok'] . ' OK, ' . $summary['warning'] . ' Warnungen, ' . $summary['error'] . ' Fehler',
+				'meta' => $this->t('summary_counts', '%1$d OK, %2$d warnings, %3$d errors', $summary['ok'], $summary['warning'], $summary['error']),
 				'items' => [
 					'checks' => (string)$summary['total'],
 					'ok' => (string)$summary['ok'],
@@ -101,61 +106,61 @@ final class IliasDashboardDisplay implements IDisplay {
 			],
 			[
 				'type' => 'client',
-				'title' => 'Instanz',
+				'title' => $this->t('card_instance', 'Instance'),
 				'status' => $this->directoryStatus($absolutePath),
-				'value' => $defaultClient !== '' ? $defaultClient : 'Kein Client',
+				'value' => $defaultClient !== '' ? $defaultClient : $this->t('no_client', 'No client'),
 				'meta' => $this->read('server', 'timezone'),
 				'items' => [
 					'HTTP' => $this->read('server', 'http_path'),
-					'Root' => $absolutePath,
-					'Data' => $dataDirectory,
+					$this->t('item_root', 'Root') => $absolutePath,
+					$this->t('item_data', 'Data') => $dataDirectory,
 				],
 			],
 			[
 				'type' => 'log',
-				'title' => 'ILIAS Log',
+				'title' => $this->t('card_ilias_log', 'ILIAS log'),
 				'status' => $this->fileStatus($logFile),
 				'value' => $this->pathShortValue($logFile),
 				'meta' => $this->fileMeta($logFile),
 				'items' => [
-					'Level' => $this->read('log', 'level'),
-					'Pfad' => $logPath,
+					$this->t('item_level', 'Level') => $this->read('log', 'level'),
+					$this->t('item_path', 'Path') => $logPath,
 				],
 			],
 			[
 				'type' => 'errors',
-				'title' => 'Error Logs',
+				'title' => $this->t('card_error_logs', 'Error logs'),
 				'status' => $this->directoryStatus($errorPath),
-				'value' => $this->errorLogCount($errorPath) . ' Dateien',
+				'value' => $this->t('files_count', '%d files', $this->errorLogCount($errorPath)),
 				'meta' => $this->latestErrorLogMeta($errorPath),
 				'items' => [
-					'Pfad' => $errorPath,
-					'Neueste' => $this->latestErrorLogFile($errorPath),
+					$this->t('item_path', 'Path') => $errorPath,
+					$this->t('item_latest', 'Latest') => $this->latestErrorLogFile($errorPath),
 				],
 			],
 			[
 				'type' => 'user',
-				'title' => 'Aktueller User',
+				'title' => $this->t('card_current_user', 'Current user'),
 				'status' => ilObjUser::_lookupActive($userId) ? 'ok' : 'warning',
 				'value' => ilObjUser::_lookupLogin($userId),
-				'meta' => 'User ID ' . $userId,
+				'meta' => $this->t('user_id_value', 'User ID %d', $userId),
 				'items' => [
-					'Name' => $this->currentUserName($userId),
-					'Sprache' => ilObjUser::_lookupLanguage($userId),
-					'Globale Rollen' => (string)count($globalRoles),
-					'Rollen gesamt' => (string)count($assignedRoles),
+					$this->t('item_name', 'Name') => $this->currentUserName($userId),
+					$this->t('item_language', 'Language') => ilObjUser::_lookupLanguage($userId),
+					$this->t('item_global_roles', 'Global roles') => (string)count($globalRoles),
+					$this->t('item_all_roles', 'All roles') => (string)count($assignedRoles),
 				],
 			],
 			[
 				'type' => 'request',
-				'title' => 'Request',
+				'title' => $this->t('card_request', 'Request'),
 				'status' => 'info',
-				'value' => $this->safeValue($this->ilCtrl->getCmd(), 'Kein Command'),
-				'meta' => $this->safeValue($this->ilCtrl->getCmdClass(), 'Keine Command Class'),
+				'value' => $this->safeValue($this->ilCtrl->getCmd(), $this->t('no_command', 'No command')),
+				'meta' => $this->safeValue($this->ilCtrl->getCmdClass(), $this->t('no_command_class', 'No command class')),
 				'items' => [
-					'Next Class' => $this->formatValue($this->ilCtrl->getNextClass()),
-					'Methode' => $this->serverValue('REQUEST_METHOD'),
-					'Async' => $this->ilCtrl->isAsynch() ? 'yes' : 'no',
+					$this->t('item_next_class', 'Next class') => $this->formatValue($this->ilCtrl->getNextClass()),
+					$this->t('item_method', 'Method') => $this->serverValue('REQUEST_METHOD'),
+					$this->t('item_async', 'Async') => $this->ilCtrl->isAsynch() ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no'),
 				],
 			],
 		];
@@ -163,13 +168,13 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function getQuickLinks(): array {
 		return [
-			$this->quickLink('Config', 'Ini-Werte und abgeleitete Pfade.', IliasConfigAdminDisplay::getName(), 'config'),
-			$this->quickLink('Health', 'Dateisystem, Pfade und Tools.', IliasSystemHealthDisplay::getName(), 'health'),
-			$this->quickLink('ILIAS Log', 'Live-Log mit Auto-Refresh.', IliasLogAdminDisplay::getName(), 'log'),
-			$this->quickLink('Error Logs', 'Error-Dateien aufklappen und lesen.', IliasErrorLogAdminDisplay::getName(), 'errors'),
-			$this->quickLink('Request', 'Controller- und Request-Kontext.', IliasRequestDebugDisplay::getName(), 'request'),
-			$this->quickLink('Permissions', 'RBAC-Rollen und Operationen.', IliasPermissionDebugDisplay::getName(), 'permission'),
-			$this->quickLink('Object', 'Objekt, Pfad und Kinder.', IliasObjectDebugDisplay::getName(), 'object'),
+			$this->quickLink($this->t('quick_config_title', 'Config'), $this->t('quick_config_description', 'INI values and derived paths.'), IliasConfigAdminDisplay::getName(), 'config'),
+			$this->quickLink($this->t('quick_health_title', 'Health'), $this->t('quick_health_description', 'File system, paths and tools.'), IliasSystemHealthDisplay::getName(), 'health'),
+			$this->quickLink($this->t('quick_log_title', 'ILIAS log'), $this->t('quick_log_description', 'Live log with automatic refresh.'), IliasLogAdminDisplay::getName(), 'log'),
+			$this->quickLink($this->t('quick_errors_title', 'Error logs'), $this->t('quick_errors_description', 'Expand and read error files.'), IliasErrorLogAdminDisplay::getName(), 'errors'),
+			$this->quickLink($this->t('quick_request_title', 'Request'), $this->t('quick_request_description', 'Controller and request context.'), IliasRequestDebugDisplay::getName(), 'request'),
+			$this->quickLink($this->t('quick_permissions_title', 'Permissions'), $this->t('quick_permissions_description', 'RBAC roles and operations.'), IliasPermissionDebugDisplay::getName(), 'permission'),
+			$this->quickLink($this->t('quick_object_title', 'Object'), $this->t('quick_object_description', 'Object, path and children.'), IliasObjectDebugDisplay::getName(), 'object'),
 		];
 	}
 
@@ -193,17 +198,17 @@ final class IliasDashboardDisplay implements IDisplay {
 
 		return [
 			[
-				'label' => 'Dashboard',
+				'label' => $this->t('timeline_dashboard', 'Dashboard'),
 				'value' => date('Y-m-d H:i:s'),
 				'status' => 'info',
 			],
 			[
-				'label' => 'ILIAS Log',
+				'label' => $this->t('timeline_ilias_log', 'ILIAS log'),
 				'value' => $this->mtimeValue($logFile),
 				'status' => $this->fileStatus($logFile),
 			],
 			[
-				'label' => 'Neueste Error-Datei',
+				'label' => $this->t('timeline_latest_error_file', 'Latest error file'),
 				'value' => $this->latestErrorLogMeta($errorPath),
 				'status' => $this->directoryStatus($errorPath),
 			],
@@ -231,7 +236,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => '',
 				'status' => 'error',
-				'message' => 'Nicht konfiguriert',
+				'message' => $this->t('check_not_configured', 'Not configured'),
 			];
 		}
 
@@ -240,7 +245,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'error',
-				'message' => 'Verzeichnis fehlt',
+				'message' => $this->t('check_directory_missing', 'Directory is missing'),
 			];
 		}
 
@@ -249,7 +254,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'error',
-				'message' => 'Nicht lesbar',
+				'message' => $this->t('check_not_readable', 'Not readable'),
 			];
 		}
 
@@ -258,7 +263,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'warning',
-				'message' => 'Nicht schreibbar',
+				'message' => $this->t('check_not_writable', 'Not writable'),
 			];
 		}
 
@@ -266,7 +271,7 @@ final class IliasDashboardDisplay implements IDisplay {
 			'label' => $label,
 			'path' => $path,
 			'status' => 'ok',
-			'message' => 'OK',
+			'message' => $this->t('status_ok', 'OK'),
 		];
 	}
 
@@ -276,7 +281,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => '',
 				'status' => 'error',
-				'message' => 'Nicht konfiguriert',
+				'message' => $this->t('check_not_configured', 'Not configured'),
 			];
 		}
 
@@ -285,7 +290,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'error',
-				'message' => 'Datei fehlt',
+				'message' => $this->t('check_file_missing', 'File is missing'),
 			];
 		}
 
@@ -294,7 +299,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'error',
-				'message' => 'Nicht lesbar',
+				'message' => $this->t('check_not_readable', 'Not readable'),
 			];
 		}
 
@@ -303,7 +308,7 @@ final class IliasDashboardDisplay implements IDisplay {
 				'label' => $label,
 				'path' => $path,
 				'status' => 'warning',
-				'message' => 'Nicht schreibbar',
+				'message' => $this->t('check_not_writable', 'Not writable'),
 			];
 		}
 
@@ -311,7 +316,7 @@ final class IliasDashboardDisplay implements IDisplay {
 			'label' => $label,
 			'path' => $path,
 			'status' => 'ok',
-			'message' => 'OK',
+			'message' => $this->t('status_ok', 'OK'),
 		];
 	}
 
@@ -336,9 +341,9 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function summaryMessage(string $status): string {
 		return match ($status) {
-			'ok' => 'Die wichtigsten Basisprüfungen sind unauffällig.',
-			'warning' => 'Es gibt Warnungen bei mindestens einer Basisprüfung.',
-			default => 'Mindestens eine wichtige Basisprüfung ist fehlgeschlagen.',
+			'ok' => $this->t('summary_ok', 'The most important basic checks are clear.'),
+			'warning' => $this->t('summary_warning', 'At least one basic check has warnings.'),
+			default => $this->t('summary_error', 'At least one important basic check failed.'),
 		};
 	}
 
@@ -396,13 +401,13 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function fileMeta(string $path): string {
 		if ($path === '' || !is_file($path)) {
-			return 'Nicht gefunden';
+			return $this->t('not_found', 'Not found');
 		}
 
 		$size = filesize($path) ?: 0;
 		$mtime = filemtime($path);
 
-		return $this->formatBytes((int)$size) . ($mtime ? ', geändert ' . date('Y-m-d H:i:s', (int)$mtime) : '');
+		return $this->formatBytes((int)$size) . ($mtime ? $this->t('modified_prefix', ', modified ') . date('Y-m-d H:i:s', (int)$mtime) : '');
 	}
 
 	private function errorLogCount(string $path): int {
@@ -435,13 +440,13 @@ final class IliasDashboardDisplay implements IDisplay {
 		$file = $this->latestErrorLogFile($path);
 
 		if ($file === '') {
-			return 'Keine Dateien';
+			return $this->t('no_files', 'No files');
 		}
 
 		$fullPath = $this->joinPath($path, $file);
 		$mtime = filemtime($fullPath);
 
-		return $file . ($mtime ? ', geändert ' . date('Y-m-d H:i:s', (int)$mtime) : '');
+		return $file . ($mtime ? $this->t('modified_prefix', ', modified ') . date('Y-m-d H:i:s', (int)$mtime) : '');
 	}
 
 	private function latestErrorLogFile(string $path): string {
@@ -482,13 +487,13 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function mtimeValue(string $path): string {
 		if ($path === '' || !file_exists($path)) {
-			return 'Nicht gefunden';
+			return $this->t('not_found', 'Not found');
 		}
 
 		$mtime = filemtime($path);
 
 		if (!$mtime) {
-			return 'Unbekannt';
+			return $this->t('unknown', 'Unknown');
 		}
 
 		return date('Y-m-d H:i:s', (int)$mtime);
@@ -514,7 +519,7 @@ final class IliasDashboardDisplay implements IDisplay {
 
 	private function pathShortValue(string $path): string {
 		if ($path === '') {
-			return 'Nicht konfiguriert';
+			return $this->t('not_configured', 'Not configured');
 		}
 
 		return basename($path);
@@ -587,7 +592,7 @@ final class IliasDashboardDisplay implements IDisplay {
 		}
 
 		if (is_bool($value)) {
-			return $value ? 'yes' : 'no';
+			return $value ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 		}
 
 		if (is_scalar($value)) {
@@ -619,5 +624,27 @@ final class IliasDashboardDisplay implements IDisplay {
 		}
 
 		return $bytes . ' B';
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_dashboard_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

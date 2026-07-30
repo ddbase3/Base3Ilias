@@ -1,27 +1,34 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-health">
-	<h3>ILIAS System Health</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS system health')); ?></h3>
 
 	<div class="health-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilIniFile + filesystem checks</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilIniFile + filesystem checks</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<div class="health-summary health-summary-<?php echo htmlspecialchars((string)$this->_['summary']['status']); ?>">
 		<div class="health-summary-main">
 			<span class="health-pill <?php echo htmlspecialchars((string)$this->_['summary']['status']); ?>">
-				<?php echo htmlspecialchars(strtoupper((string)$this->_['summary']['status'])); ?>
+				<?php $summaryStatus = strtolower((string)$this->_['summary']['status']); echo htmlspecialchars($t('status_' . $summaryStatus, strtoupper($summaryStatus))); ?>
 			</span>
-			<span><?php echo (int)$this->_['summary']['total']; ?> Checks</span>
+			<span><?php echo (int)$this->_['summary']['total']; ?> <?php echo htmlspecialchars($t('checks', 'checks')); ?></span>
 		</div>
 
 		<div class="health-summary-counts">
-			<span><strong><?php echo (int)$this->_['summary']['ok']; ?></strong> OK</span>
-			<span><strong><?php echo (int)$this->_['summary']['warning']; ?></strong> Warning</span>
-			<span><strong><?php echo (int)$this->_['summary']['error']; ?></strong> Error</span>
-			<span><strong><?php echo (int)$this->_['summary']['info']; ?></strong> Info</span>
+			<span><strong><?php echo (int)$this->_['summary']['ok']; ?></strong> <?php echo htmlspecialchars($t('status_ok', 'OK')); ?></span>
+			<span><strong><?php echo (int)$this->_['summary']['warning']; ?></strong> <?php echo htmlspecialchars($t('status_warning', 'Warning')); ?></span>
+			<span><strong><?php echo (int)$this->_['summary']['error']; ?></strong> <?php echo htmlspecialchars($t('status_error', 'Error')); ?></span>
+			<span><strong><?php echo (int)$this->_['summary']['info']; ?></strong> <?php echo htmlspecialchars($t('status_info', 'Info')); ?></span>
 		</div>
 
-		<button type="button" onclick="window.location.reload()">Neu prüfen</button>
+		<button type="button" onclick="window.location.reload()"><?php echo htmlspecialchars($t('check_again', 'Check again')); ?></button>
 	</div>
 
 	<?php foreach ((array)$this->_['sections'] as $section): ?>
@@ -37,11 +44,11 @@
 				<table class="health-table">
 					<thead>
 						<tr>
-							<th>Status</th>
-							<th>Check</th>
-							<th>Source</th>
-							<th>Path</th>
-							<th>Details</th>
+							<th><?php echo htmlspecialchars($t('column_status', 'Status')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_check', 'Check')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_source', 'Source')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_path', 'Path')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_details', 'Details')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -49,12 +56,12 @@
 							<tr>
 								<td>
 									<span class="health-pill <?php echo htmlspecialchars((string)$row['status']); ?>">
-										<?php echo htmlspecialchars(strtoupper((string)$row['status'])); ?>
+										<?php $rowStatus = strtolower((string)$row['status']); echo htmlspecialchars($t('status_' . $rowStatus, strtoupper($rowStatus))); ?>
 									</span>
 								</td>
 								<td>
 									<strong><?php echo htmlspecialchars((string)$row['label']); ?></strong>
-									<div class="health-type"><?php echo htmlspecialchars((string)$row['type']); ?></div>
+									<div class="health-type"><?php $rowType = strtolower((string)$row['type']); echo htmlspecialchars($t('type_' . $rowType, (string)$row['type'])); ?></div>
 								</td>
 								<td class="health-cell-mono"><?php echo htmlspecialchars((string)$row['source']); ?></td>
 								<td class="health-cell-path">

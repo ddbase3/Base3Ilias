@@ -1,29 +1,36 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-user">
-	<h3>ILIAS User Debug</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS user debug')); ?></h3>
 
 	<div class="user-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilObjUser + ilRbacReview</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilObjUser + ilRbacReview</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<div class="user-actions">
 		<label class="user-ref">
-			User ID:
+			<?php echo htmlspecialchars($t('user_id_input', 'User ID:')); ?>
 			<input type="number" id="user-id" value="<?php echo (int)$this->_['selectedUserId']; ?>" min="1">
 		</label>
 
 		<label class="user-ref">
-			Login:
+			<?php echo htmlspecialchars($t('login_input', 'Login:')); ?>
 			<input type="text" id="user-login" value="<?php echo htmlspecialchars((string)$this->_['selectedLogin']); ?>">
 		</label>
 
-		<button type="button" onclick="userApplyParams()">Prüfen</button>
-		<button type="button" onclick="userUseCurrentUser()">Aktueller User</button>
+		<button type="button" onclick="userApplyParams()"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
+		<button type="button" onclick="userUseCurrentUser()"><?php echo htmlspecialchars($t('current_user', 'Current user')); ?></button>
 
 		<div class="user-note">
-			Verwendet eigene URL-Parameter:
+			<?php echo htmlspecialchars($t('uses_own_url_parameters', 'Uses its own URL parameters:')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['userIdParamName']); ?></span>
-			und
+			<?php echo htmlspecialchars($t('and', 'and')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['userLoginParamName']); ?></span>.
 		</div>
 	</div>
@@ -34,17 +41,17 @@
 
 	<div class="user-section">
 		<div class="user-section-head">
-			<h4>User</h4>
-			<div class="user-description">Basisdaten des ausgewählten Users.</div>
+			<h4><?php echo htmlspecialchars($t('user_title', 'User')); ?></h4>
+			<div class="user-description"><?php echo htmlspecialchars($t('user_description', 'Basic data for the selected user.')); ?></div>
 		</div>
 
 		<div class="user-tablewrap">
 			<table class="user-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -68,20 +75,20 @@
 
 	<div class="user-section">
 		<div class="user-section-head">
-			<h4>Status / Login</h4>
-			<div class="user-description">Accountstatus, Login-Zeitpunkte und Zeitbegrenzung.</div>
+			<h4><?php echo htmlspecialchars($t('status_login_title', 'Status / login')); ?></h4>
+			<div class="user-description"><?php echo htmlspecialchars($t('status_login_description', 'Account status, login times and time limits.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['statusRows'])): ?>
-			<div class="user-empty">Keine Statusdaten vorhanden.</div>
+			<div class="user-empty"><?php echo htmlspecialchars($t('no_status_data', 'No status data is available.')); ?></div>
 		<?php else: ?>
 			<div class="user-tablewrap">
 				<table class="user-table">
 					<thead>
 						<tr>
-							<th>Label</th>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -106,19 +113,19 @@
 
 	<div class="user-section">
 		<div class="user-section-head">
-			<h4>Global Roles</h4>
-			<div class="user-description">Direkt zugewiesene globale Rollen.</div>
+			<h4><?php echo htmlspecialchars($t('global_roles_title', 'Global roles')); ?></h4>
+			<div class="user-description"><?php echo htmlspecialchars($t('global_roles_description', 'Directly assigned global roles.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['globalRoleRows'])): ?>
-			<div class="user-empty">Keine globalen Rollen gefunden.</div>
+			<div class="user-empty"><?php echo htmlspecialchars($t('no_global_roles', 'No global roles found.')); ?></div>
 		<?php else: ?>
 			<div class="user-tablewrap">
 				<table class="user-table">
 					<thead>
 						<tr>
-							<th>Role ID</th>
-							<th>Title</th>
+							<th><?php echo htmlspecialchars($t('column_role_id', 'Role ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -136,20 +143,20 @@
 
 	<div class="user-section">
 		<div class="user-section-head">
-			<h4>Assigned Roles</h4>
-			<div class="user-description">Alle direkt zugewiesenen Rollen.</div>
+			<h4><?php echo htmlspecialchars($t('assigned_roles_title', 'Assigned roles')); ?></h4>
+			<div class="user-description"><?php echo htmlspecialchars($t('assigned_roles_description', 'All directly assigned roles.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['roleRows'])): ?>
-			<div class="user-empty">Keine Rollen gefunden.</div>
+			<div class="user-empty"><?php echo htmlspecialchars($t('no_roles', 'No roles found.')); ?></div>
 		<?php else: ?>
 			<div class="user-tablewrap">
 				<table class="user-table">
 					<thead>
 						<tr>
-							<th>Role ID</th>
-							<th>Title</th>
-							<th>Type</th>
+							<th><?php echo htmlspecialchars($t('column_role_id', 'Role ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -168,19 +175,19 @@
 
 	<div class="user-section">
 		<div class="user-section-head">
-			<h4>Preferences</h4>
-			<div class="user-description">Ausgewählte User-Preferences.</div>
+			<h4><?php echo htmlspecialchars($t('preferences_title', 'Preferences')); ?></h4>
+			<div class="user-description"><?php echo htmlspecialchars($t('preferences_description', 'Selected user preferences.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['preferenceRows'])): ?>
-			<div class="user-empty">Keine Preferences gefunden.</div>
+			<div class="user-empty"><?php echo htmlspecialchars($t('no_preferences', 'No preferences found.')); ?></div>
 		<?php else: ?>
 			<div class="user-tablewrap">
 				<table class="user-table">
 					<thead>
 						<tr>
-							<th>Key</th>
-							<th>Value</th>
+							<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 						</tr>
 					</thead>
 					<tbody>

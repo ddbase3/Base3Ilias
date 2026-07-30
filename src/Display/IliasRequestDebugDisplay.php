@@ -8,6 +8,8 @@ use ilCtrl;
 
 final class IliasRequestDebugDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	public function __construct(
 		private readonly IMvcView $view,
 		private readonly ilCtrl $ilCtrl
@@ -22,11 +24,13 @@ final class IliasRequestDebugDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS request and controller debug overview.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS request and controller debug overview.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->loadTranslations();
 		$this->view->setTemplate('Display/IliasRequestDebugDisplay.php');
 
 		$this->view->assign('generatedAt', date('c'));
@@ -35,35 +39,36 @@ final class IliasRequestDebugDisplay implements IDisplay {
 		$this->view->assign('getRows', $this->getGetRows());
 		$this->view->assign('postRows', $this->getPostRows());
 		$this->view->assign('serverRows', $this->getServerRows());
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
 
 	private function getControllerRows(): array {
 		return [
-			$this->row('Command', 'ilCtrl::getCmd()', $this->ilCtrl->getCmd()),
-			$this->row('Command Class', 'ilCtrl::getCmdClass()', $this->ilCtrl->getCmdClass()),
-			$this->row('Next Class', 'ilCtrl::getNextClass()', $this->ilCtrl->getNextClass()),
-			$this->row('Context Object ID', 'ilCtrl::getContextObjId()', $this->ilCtrl->getContextObjId()),
-			$this->row('Context Object Type', 'ilCtrl::getContextObjType()', $this->ilCtrl->getContextObjType()),
-			$this->row('Async Request', 'ilCtrl::isAsynch()', $this->ilCtrl->isAsynch() ? 'yes' : 'no'),
-			$this->row('Redirect Source', 'ilCtrl::getRedirectSource()', $this->ilCtrl->getRedirectSource()),
-			$this->row('Current Class Path', 'ilCtrl::getCurrentClassPath()', $this->joinList($this->ilCtrl->getCurrentClassPath())),
-			$this->row('Call History', 'ilCtrl::getCallHistory()', $this->formatValue($this->ilCtrl->getCallHistory())),
+			$this->row($this->t('command', 'Command'), 'ilCtrl::getCmd()', $this->ilCtrl->getCmd()),
+			$this->row($this->t('command_class', 'Command class'), 'ilCtrl::getCmdClass()', $this->ilCtrl->getCmdClass()),
+			$this->row($this->t('next_class', 'Next class'), 'ilCtrl::getNextClass()', $this->ilCtrl->getNextClass()),
+			$this->row($this->t('context_object_id', 'Context object ID'), 'ilCtrl::getContextObjId()', $this->ilCtrl->getContextObjId()),
+			$this->row($this->t('context_object_type', 'Context object type'), 'ilCtrl::getContextObjType()', $this->ilCtrl->getContextObjType()),
+			$this->row($this->t('async_request', 'Asynchronous request'), 'ilCtrl::isAsynch()', $this->ilCtrl->isAsynch() ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no')),
+			$this->row($this->t('redirect_source', 'Redirect source'), 'ilCtrl::getRedirectSource()', $this->ilCtrl->getRedirectSource()),
+			$this->row($this->t('current_class_path', 'Current class path'), 'ilCtrl::getCurrentClassPath()', $this->joinList($this->ilCtrl->getCurrentClassPath())),
+			$this->row($this->t('call_history', 'Call history'), 'ilCtrl::getCallHistory()', $this->formatValue($this->ilCtrl->getCallHistory())),
 		];
 	}
 
 	private function getRequestRows(): array {
 		return [
-			$this->row('Request Method', 'REQUEST_METHOD', $this->serverValue('REQUEST_METHOD')),
-			$this->row('Request URI', 'REQUEST_URI', $this->serverValue('REQUEST_URI')),
-			$this->row('Script Name', 'SCRIPT_NAME', $this->serverValue('SCRIPT_NAME')),
-			$this->row('PHP Self', 'PHP_SELF', $this->serverValue('PHP_SELF')),
-			$this->row('Query String', 'QUERY_STRING', $this->serverValue('QUERY_STRING')),
-			$this->row('HTTP Host', 'HTTP_HOST', $this->serverValue('HTTP_HOST')),
-			$this->row('HTTPS', 'HTTPS', $this->serverValue('HTTPS')),
-			$this->row('Remote Address', 'REMOTE_ADDR', $this->serverValue('REMOTE_ADDR')),
-			$this->row('User Agent', 'HTTP_USER_AGENT', $this->serverValue('HTTP_USER_AGENT')),
+			$this->row($this->t('request_method', 'Request method'), 'REQUEST_METHOD', $this->serverValue('REQUEST_METHOD')),
+			$this->row($this->t('request_uri', 'Request URI'), 'REQUEST_URI', $this->serverValue('REQUEST_URI')),
+			$this->row($this->t('script_name', 'Script name'), 'SCRIPT_NAME', $this->serverValue('SCRIPT_NAME')),
+			$this->row($this->t('php_self', 'PHP self'), 'PHP_SELF', $this->serverValue('PHP_SELF')),
+			$this->row($this->t('query_string', 'Query string'), 'QUERY_STRING', $this->serverValue('QUERY_STRING')),
+			$this->row($this->t('http_host', 'HTTP host'), 'HTTP_HOST', $this->serverValue('HTTP_HOST')),
+			$this->row($this->t('https', 'HTTPS'), 'HTTPS', $this->serverValue('HTTPS')),
+			$this->row($this->t('remote_address', 'Remote address'), 'REMOTE_ADDR', $this->serverValue('REMOTE_ADDR')),
+			$this->row($this->t('user_agent', 'User agent'), 'HTTP_USER_AGENT', $this->serverValue('HTTP_USER_AGENT')),
 		];
 	}
 
@@ -204,7 +209,7 @@ final class IliasRequestDebugDisplay implements IDisplay {
 		}
 
 		if (is_bool($value)) {
-			return $value ? 'yes' : 'no';
+			return $value ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 		}
 
 		if (is_scalar($value)) {
@@ -242,5 +247,27 @@ final class IliasRequestDebugDisplay implements IDisplay {
 		}
 
 		return get_debug_type($value);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_request_debug_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

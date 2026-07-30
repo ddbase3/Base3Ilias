@@ -1,47 +1,54 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-permission">
-	<h3>ILIAS Permission Debug</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS permission debug')); ?></h3>
 
 	<div class="permission-meta">
-		<div><strong>Quelle:</strong> <span class="mono">ilObjUser + ilRbacReview</span></div>
-		<div><strong>Generiert:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono">ilObjUser + ilRbacReview</span></div>
+		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
 	<div class="permission-actions">
 		<label class="permission-ref">
-			Target ref_id:
+			<?php echo htmlspecialchars($t('target_ref_id_input', 'Target ref_id:')); ?>
 			<input type="number" id="permission-target-ref-id" value="<?php echo (int)$this->_['targetRefId']; ?>" min="1">
 		</label>
 
 		<label class="permission-ref">
-			User ID:
+			<?php echo htmlspecialchars($t('user_id_input', 'User ID:')); ?>
 			<input type="number" id="permission-user-id" value="<?php echo (int)$this->_['userId']; ?>" min="1">
 		</label>
 
-		<button type="button" onclick="permissionApplyParams()">Prüfen</button>
-		<button type="button" onclick="permissionUseCurrentUser()">Aktueller User</button>
+		<button type="button" onclick="permissionApplyParams()"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
+		<button type="button" onclick="permissionUseCurrentUser()"><?php echo htmlspecialchars($t('current_user', 'Current user')); ?></button>
 
 		<div class="permission-note">
-			Verwendet eigene URL-Parameter:
+			<?php echo htmlspecialchars($t('uses_own_url_parameters', 'Uses its own URL parameters:')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['targetParamName']); ?></span>
-			und
+			<?php echo htmlspecialchars($t('and', 'and')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['userParamName']); ?></span>.
-			<span class="mono">ref_id</span> wird nicht verändert.
+			<span class="mono">ref_id</span> <?php echo htmlspecialchars($t('ref_id_unchanged', 'is not changed.')); ?>
 		</div>
 	</div>
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Target Object</h4>
-			<div class="permission-description">Zielobjekt für rollenbasierte Rechteprüfung.</div>
+			<h4><?php echo htmlspecialchars($t('target_object_title', 'Target object')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('target_object_description', 'Target object for role-based permission checks.')); ?></div>
 		</div>
 
 		<div class="permission-tablewrap">
 			<table class="permission-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -65,17 +72,17 @@
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Selected User</h4>
-			<div class="permission-description">Benutzer, dessen Rollen geprüft werden.</div>
+			<h4><?php echo htmlspecialchars($t('selected_user_title', 'Selected user')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('selected_user_description', 'User whose roles are checked.')); ?></div>
 		</div>
 
 		<div class="permission-tablewrap">
 			<table class="permission-table">
 				<thead>
 					<tr>
-						<th>Label</th>
-						<th>Key</th>
-						<th>Value</th>
+						<th><?php echo htmlspecialchars($t('column_label', 'Label')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_key', 'Key')); ?></th>
+						<th><?php echo htmlspecialchars($t('column_value', 'Value')); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -99,21 +106,21 @@
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Effective RBAC Operations</h4>
-			<div class="permission-description">Aus den dem ausgewählten User zugewiesenen Rollen im Zielpfad abgeleitete Operationen.</div>
+			<h4><?php echo htmlspecialchars($t('effective_operations_title', 'Effective RBAC operations')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('effective_operations_description', 'Operations derived from the selected user’s assigned roles in the target path.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['effectiveRows'])): ?>
-			<div class="permission-empty">Keine Operationen ermittelbar.</div>
+			<div class="permission-empty"><?php echo htmlspecialchars($t('no_operations', 'No operations could be determined.')); ?></div>
 		<?php else: ?>
 			<div class="permission-tablewrap">
 				<table class="permission-table">
 					<thead>
 						<tr>
-							<th>Status</th>
-							<th>Operation</th>
-							<th>Operation ID</th>
-							<th>Granted By</th>
+							<th><?php echo htmlspecialchars($t('column_status', 'Status')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_operation', 'Operation')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_operation_id', 'Operation ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_granted_by', 'Granted by')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -121,9 +128,9 @@
 							<tr>
 								<td>
 									<?php if (!empty($row['granted'])): ?>
-										<span class="permission-pill ok">YES</span>
+										<span class="permission-pill ok"><?php echo htmlspecialchars($t('yes_upper', 'YES')); ?></span>
 									<?php else: ?>
-										<span class="permission-pill denied">NO</span>
+										<span class="permission-pill denied"><?php echo htmlspecialchars($t('no_upper', 'NO')); ?></span>
 									<?php endif; ?>
 								</td>
 								<td class="permission-cell-mono"><?php echo htmlspecialchars((string)$row['operation']); ?></td>
@@ -151,22 +158,22 @@
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Role Permissions On Target</h4>
-			<div class="permission-description">Relevante Rollen: User-Rollen, die auch im Rollenpfad des Zielobjekts vorkommen.</div>
+			<h4><?php echo htmlspecialchars($t('role_permissions_title', 'Role permissions on target')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('role_permissions_description', 'Relevant roles: user roles that also occur in the target object’s role path.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['rolePermissionRows'])): ?>
-			<div class="permission-empty">Keine relevanten Rollen für dieses Zielobjekt gefunden.</div>
+			<div class="permission-empty"><?php echo htmlspecialchars($t('no_relevant_roles', 'No relevant roles were found for this target object.')); ?></div>
 		<?php else: ?>
 			<div class="permission-tablewrap">
 				<table class="permission-table">
 					<thead>
 						<tr>
-							<th>Role ID</th>
-							<th>Title</th>
-							<th>Type</th>
-							<th>Parent</th>
-							<th>Operations</th>
+							<th><?php echo htmlspecialchars($t('column_role_id', 'Role ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_parent', 'Parent')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_operations', 'Operations')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -205,20 +212,20 @@
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Assigned User Roles</h4>
-			<div class="permission-description">Alle dem ausgewählten User direkt zugewiesenen Rollen.</div>
+			<h4><?php echo htmlspecialchars($t('assigned_roles_title', 'Assigned user roles')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('assigned_roles_description', 'All roles directly assigned to the selected user.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['assignedRoleRows'])): ?>
-			<div class="permission-empty">Keine Rollen gefunden.</div>
+			<div class="permission-empty"><?php echo htmlspecialchars($t('no_roles', 'No roles found.')); ?></div>
 		<?php else: ?>
 			<div class="permission-tablewrap">
 				<table class="permission-table">
 					<thead>
 						<tr>
-							<th>Role ID</th>
-							<th>Title</th>
-							<th>Type</th>
+							<th><?php echo htmlspecialchars($t('column_role_id', 'Role ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -237,23 +244,23 @@
 
 	<div class="permission-section">
 		<div class="permission-section-head">
-			<h4>Roles In Target Path</h4>
-			<div class="permission-description">Rollen, die für das Zielobjekt über den Repository-Pfad relevant sind.</div>
+			<h4><?php echo htmlspecialchars($t('roles_in_path_title', 'Roles in target path')); ?></h4>
+			<div class="permission-description"><?php echo htmlspecialchars($t('roles_in_path_description', 'Roles relevant to the target object through the repository path.')); ?></div>
 		</div>
 
 		<?php if (empty($this->_['parentRoleRows'])): ?>
-			<div class="permission-empty">Keine Rollen im Zielpfad gefunden oder kein Target ref_id angegeben.</div>
+			<div class="permission-empty"><?php echo htmlspecialchars($t('no_roles_in_path', 'No roles were found in the target path or no target ref_id was specified.')); ?></div>
 		<?php else: ?>
 			<div class="permission-tablewrap">
 				<table class="permission-table">
 					<thead>
 						<tr>
-							<th>Assigned</th>
-							<th>Role ID</th>
-							<th>Title</th>
-							<th>Type</th>
-							<th>Parent</th>
-							<th>Protected</th>
+							<th><?php echo htmlspecialchars($t('column_assigned', 'Assigned')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_role_id', 'Role ID')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_title', 'Title')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_type', 'Type')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_parent', 'Parent')); ?></th>
+							<th><?php echo htmlspecialchars($t('column_protected', 'Protected')); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -261,9 +268,9 @@
 							<tr>
 								<td>
 									<?php if (!empty($row['assigned'])): ?>
-										<span class="permission-pill ok">YES</span>
+										<span class="permission-pill ok"><?php echo htmlspecialchars($t('yes_upper', 'YES')); ?></span>
 									<?php else: ?>
-										<span class="permission-pill info">NO</span>
+										<span class="permission-pill info"><?php echo htmlspecialchars($t('no_upper', 'NO')); ?></span>
 									<?php endif; ?>
 								</td>
 								<td class="permission-cell-mono"><?php echo htmlspecialchars((string)$row['role_id']); ?></td>
@@ -284,9 +291,9 @@
 								</td>
 								<td>
 									<?php if (!empty($row['protected'])): ?>
-										<span class="permission-pill warning">YES</span>
+										<span class="permission-pill warning"><?php echo htmlspecialchars($t('yes_upper', 'YES')); ?></span>
 									<?php else: ?>
-										<span class="permission-pill info">NO</span>
+										<span class="permission-pill info"><?php echo htmlspecialchars($t('no_upper', 'NO')); ?></span>
 									<?php endif; ?>
 								</td>
 							</tr>

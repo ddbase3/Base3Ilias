@@ -10,6 +10,8 @@ use ilIniFile;
 
 final class IliasLogAdminDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	private const DEFAULT_NUM = 100;
 	private const MAX_NUM = 1000;
 	private const READ_BLOCK_SIZE = 8192;
@@ -30,10 +32,13 @@ final class IliasLogAdminDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS log viewer with auto-refresh.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS log viewer with auto-refresh.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$out = strtolower((string)$out);
 
 		if ($out === 'json') {
@@ -44,13 +49,13 @@ final class IliasLogAdminDisplay implements IDisplay {
 	}
 
 	private function handleHtml(): string {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasLogAdminDisplay.php');
 
 		$this->view->assign('endpoint', $this->buildEndpointBase());
 		$this->view->assign('logPath', $this->getLogFullPath());
 		$this->view->assign('defaultNum', self::DEFAULT_NUM);
 		$this->view->assign('maxNum', self::MAX_NUM);
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -61,10 +66,10 @@ final class IliasLogAdminDisplay implements IDisplay {
 		try {
 			return match ($action) {
 				'tail' => $this->jsonSuccess($this->loadTail()),
-				default => $this->jsonError("Unknown action '$action'. Use: tail"),
+				default => $this->jsonError($this->t('unknown_action', "Unknown action '%s'. Use: tail", $action)),
 			};
 		} catch (\Throwable $e) {
-			return $this->jsonError('Exception: ' . $e->getMessage());
+			return $this->jsonError($this->t('exception', 'Exception: %s', $e->getMessage()));
 		}
 	}
 
@@ -79,7 +84,7 @@ final class IliasLogAdminDisplay implements IDisplay {
 				'path' => '',
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS log path is not configured.',
+				'message' => $this->t('path_not_configured', 'ILIAS log path is not configured.'),
 				'logs' => [],
 			];
 		}
@@ -89,7 +94,7 @@ final class IliasLogAdminDisplay implements IDisplay {
 				'path' => $logFullPath,
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS log file does not exist.',
+				'message' => $this->t('file_missing', 'ILIAS log file does not exist.'),
 				'logs' => [],
 			];
 		}
@@ -99,7 +104,7 @@ final class IliasLogAdminDisplay implements IDisplay {
 				'path' => $logFullPath,
 				'num' => $num,
 				'readable' => false,
-				'message' => 'ILIAS log file is not readable.',
+				'message' => $this->t('file_not_readable', 'ILIAS log file is not readable.'),
 				'logs' => [],
 			];
 		}
@@ -235,5 +240,27 @@ final class IliasLogAdminDisplay implements IDisplay {
 			'timestamp' => gmdate('c'),
 			'message' => $message
 		], JSON_UNESCAPED_UNICODE);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_log_admin_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

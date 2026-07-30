@@ -10,6 +10,8 @@ use ilRbacReview;
 
 final class IliasPermissionDebugDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	private const PARAM_TARGET_REF_ID = 'base3_target_ref_id';
 	private const PARAM_USER_ID = 'base3_user_id';
 
@@ -37,10 +39,13 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS RBAC permission debug overview.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS RBAC permission debug overview.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$userId = $this->getRequestUserId();
 		$targetRefId = $this->getRequestTargetRefId();
 
@@ -51,7 +56,6 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		$relevantRoleIds = $this->getRelevantRoleIds($assignedRoleIds, $parentRoles);
 		$roleOperationMap = $this->getRoleOperationMap($targetRefId, $relevantRoleIds);
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasPermissionDebugDisplay.php');
 
 		$this->view->assign('generatedAt', date('c'));
@@ -66,6 +70,7 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		$this->view->assign('parentRoleRows', $this->getParentRoleRows($parentRoles, $assignedRoleIds));
 		$this->view->assign('effectiveRows', $this->getEffectiveRows($relevantRoleIds, $roleOperationMap));
 		$this->view->assign('rolePermissionRows', $this->getRolePermissionRows($parentRoles, $relevantRoleIds, $roleOperationMap, $operationMap));
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -73,8 +78,8 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 	private function getTargetRows(int $targetRefId): array {
 		if ($targetRefId <= 0) {
 			return [
-				$this->row('Target Ref ID', self::PARAM_TARGET_REF_ID, ''),
-				$this->row('Status', 'target', 'No target ref_id given. Use ' . self::PARAM_TARGET_REF_ID . ' to inspect object permissions.'),
+				$this->row($this->t('target_ref_id', 'Target ref_id'), self::PARAM_TARGET_REF_ID, ''),
+				$this->row($this->t('column_status', 'Status'), 'target', $this->t('no_target', 'No target ref_id given. Use %s to inspect object permissions.', self::PARAM_TARGET_REF_ID)),
 			];
 		}
 
@@ -83,10 +88,10 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		$title = $objId > 0 ? ilObject::_lookupTitle($objId) : '';
 
 		return [
-			$this->row('Target Ref ID', self::PARAM_TARGET_REF_ID, $targetRefId),
-			$this->row('Object ID', 'obj_id', $objId),
-			$this->row('Object Type', 'type', $type),
-			$this->row('Title', 'title', $title),
+			$this->row($this->t('target_ref_id', 'Target ref_id'), self::PARAM_TARGET_REF_ID, $targetRefId),
+			$this->row($this->t('object_id', 'Object ID'), 'obj_id', $objId),
+			$this->row($this->t('object_type', 'Object type'), 'type', $type),
+			$this->row($this->t('column_title', 'Title'), 'title', $title),
 		];
 	}
 
@@ -94,13 +99,13 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		$name = ilObjUser::_lookupName($userId);
 
 		return [
-			$this->row('Selected User ID', self::PARAM_USER_ID, $userId),
-			$this->row('Current Session User ID', 'ilObjUser::getId()', $this->getCurrentUserId()),
-			$this->row('Login', 'ilObjUser::_lookupLogin()', ilObjUser::_lookupLogin($userId)),
-			$this->row('Firstname', 'ilObjUser::_lookupName()[firstname]', (string)($name['firstname'] ?? '')),
-			$this->row('Lastname', 'ilObjUser::_lookupName()[lastname]', (string)($name['lastname'] ?? '')),
-			$this->row('Email', 'ilObjUser::_lookupEmail()', ilObjUser::_lookupEmail($userId)),
-			$this->row('Exists', 'ilObjUser::_lookupName()[user_id]', ((int)($name['user_id'] ?? 0)) > 0 ? 'yes' : 'no'),
+			$this->row($this->t('selected_user_id', 'Selected user ID'), self::PARAM_USER_ID, $userId),
+			$this->row($this->t('current_session_user_id', 'Current session user ID'), 'ilObjUser::getId()', $this->getCurrentUserId()),
+			$this->row($this->t('login', 'Login'), 'ilObjUser::_lookupLogin()', ilObjUser::_lookupLogin($userId)),
+			$this->row($this->t('first_name', 'First name'), 'ilObjUser::_lookupName()[firstname]', (string)($name['firstname'] ?? '')),
+			$this->row($this->t('last_name', 'Last name'), 'ilObjUser::_lookupName()[lastname]', (string)($name['lastname'] ?? '')),
+			$this->row($this->t('email', 'Email'), 'ilObjUser::_lookupEmail()', ilObjUser::_lookupEmail($userId)),
+			$this->row($this->t('exists', 'Exists'), 'ilObjUser::_lookupName()[user_id]', ((int)($name['user_id'] ?? 0)) > 0 ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no')),
 		];
 	}
 
@@ -117,7 +122,7 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 			$rows[] = [
 				'role_id' => $roleId,
 				'title' => ilObject::_lookupTitle($roleId),
-				'type' => in_array($roleId, $globalRoleIds, true) ? 'global' : 'local / linked',
+				'type' => in_array($roleId, $globalRoleIds, true) ? $this->t('role_type_global', 'global') : $this->t('role_type_local_linked', 'local / linked'),
 			];
 		}
 
@@ -335,7 +340,7 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		}
 
 		if (is_bool($value)) {
-			return $value ? 'yes' : 'no';
+			return $value ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 		}
 
 		if (is_scalar($value)) {
@@ -351,5 +356,27 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		}
 
 		return get_debug_type($value);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_permission_debug_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

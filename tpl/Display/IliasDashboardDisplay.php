@@ -1,12 +1,19 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-dashboard">
 	<div class="dashboard-head">
 		<div>
-			<h3>ILIAS Admin Dashboard</h3>
-			<div class="dashboard-subtitle">Kompakte Startseite für Systemstatus, Logs und Debug-Werkzeuge.</div>
+			<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS admin dashboard')); ?></h3>
+			<div class="dashboard-subtitle"><?php echo htmlspecialchars($t('page_subtitle', 'Compact overview of system status, logs and debugging tools.')); ?></div>
 		</div>
 
 		<div class="dashboard-generated">
-			<strong>Generiert:</strong>
+			<strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span>
 		</div>
 	</div>
@@ -15,20 +22,20 @@
 		<div class="dashboard-ring" style="--dashboard-score: <?php echo (int)$this->_['summary']['score']; ?>;">
 			<div>
 				<strong><?php echo (int)$this->_['summary']['score']; ?>%</strong>
-				<span>OK</span>
+				<span><?php echo htmlspecialchars($t('status_ok', 'OK')); ?></span>
 			</div>
 		</div>
 
 		<div class="dashboard-hero-text">
 			<div class="dashboard-status-pill <?php echo htmlspecialchars((string)$this->_['summary']['status']); ?>">
-				<?php echo htmlspecialchars(strtoupper((string)$this->_['summary']['status'])); ?>
+				<?php $summaryStatus = strtolower((string)$this->_['summary']['status']); echo htmlspecialchars($t('status_' . $summaryStatus, strtoupper($summaryStatus))); ?>
 			</div>
 			<h4><?php echo htmlspecialchars((string)$this->_['summary']['message']); ?></h4>
 			<div class="dashboard-hero-meta">
-				<span><?php echo (int)$this->_['summary']['ok']; ?> OK</span>
-				<span><?php echo (int)$this->_['summary']['warning']; ?> Warnungen</span>
-				<span><?php echo (int)$this->_['summary']['error']; ?> Fehler</span>
-				<span><?php echo (int)$this->_['summary']['total']; ?> Checks</span>
+				<span><?php echo (int)$this->_['summary']['ok']; ?> <?php echo htmlspecialchars($t('status_ok', 'OK')); ?></span>
+				<span><?php echo (int)$this->_['summary']['warning']; ?> <?php echo htmlspecialchars($t('status_warning_plural', 'Warnings')); ?></span>
+				<span><?php echo (int)$this->_['summary']['error']; ?> <?php echo htmlspecialchars($t('status_error_plural', 'Errors')); ?></span>
+				<span><?php echo (int)$this->_['summary']['total']; ?> <?php echo htmlspecialchars($t('checks', 'checks')); ?></span>
 			</div>
 		</div>
 	</div>
@@ -39,7 +46,7 @@
 				<div class="dashboard-card-top">
 					<div class="dashboard-card-title"><?php echo htmlspecialchars((string)$card['title']); ?></div>
 					<div class="dashboard-mini-pill <?php echo htmlspecialchars((string)$card['status']); ?>">
-						<?php echo htmlspecialchars(strtoupper((string)$card['status'])); ?>
+						<?php $cardStatus = strtolower((string)$card['status']); echo htmlspecialchars($t('status_' . $cardStatus, strtoupper($cardStatus))); ?>
 					</div>
 				</div>
 
@@ -69,8 +76,8 @@
 	<div class="dashboard-lower-grid">
 		<div class="dashboard-panel">
 			<div class="dashboard-panel-head">
-				<h4>Basisprüfungen</h4>
-				<div>Kurzer Status der wichtigsten Pfade und Dateien.</div>
+				<h4><?php echo htmlspecialchars($t('basic_checks_title', 'Basic checks')); ?></h4>
+				<div><?php echo htmlspecialchars($t('basic_checks_description', 'Brief status of the most important paths and files.')); ?></div>
 			</div>
 
 			<div class="dashboard-check-grid">
@@ -88,8 +95,8 @@
 
 		<div class="dashboard-panel">
 			<div class="dashboard-panel-head">
-				<h4>Aktivität</h4>
-				<div>Letzte bekannte Zeitpunkte.</div>
+				<h4><?php echo htmlspecialchars($t('activity_title', 'Activity')); ?></h4>
+				<div><?php echo htmlspecialchars($t('activity_description', 'Latest known timestamps.')); ?></div>
 			</div>
 
 			<div class="dashboard-timeline">
@@ -108,8 +115,8 @@
 
 	<div class="dashboard-panel dashboard-tools">
 		<div class="dashboard-panel-head">
-			<h4>Werkzeuge</h4>
-			<div>Direkte Einstiege in die spezialisierten Admin-Displays im ILIAS-Rahmen.</div>
+			<h4><?php echo htmlspecialchars($t('tools_title', 'Tools')); ?></h4>
+			<div><?php echo htmlspecialchars($t('tools_description', 'Direct links to the specialized administration displays within ILIAS.')); ?></div>
 		</div>
 
 		<div class="dashboard-tool-grid">

@@ -10,6 +10,8 @@ use ilRbacReview;
 
 final class IliasUserDebugDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	private const PARAM_USER_ID = 'base3_user_id';
 	private const PARAM_USER_LOGIN = 'base3_user_login';
 
@@ -42,14 +44,16 @@ final class IliasUserDebugDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS user debug overview.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS user debug overview.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$selection = $this->getUserSelection();
 		$userId = (int)$selection['user_id'];
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasUserDebugDisplay.php');
 
 		$this->view->assign('generatedAt', date('c'));
@@ -64,6 +68,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 		$this->view->assign('preferenceRows', $this->getPreferenceRows($userId));
 		$this->view->assign('roleRows', $this->getRoleRows($userId));
 		$this->view->assign('globalRoleRows', $this->getGlobalRoleRows($userId));
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -80,7 +85,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 			return [
 				'user_id' => $userId,
 				'login' => $login,
-				'message' => $userId > 0 ? '' : 'No user found for login "' . $login . '".',
+				'message' => $userId > 0 ? '' : $this->t('no_user_for_login', 'No user found for login "%s".', $login),
 			];
 		}
 
@@ -102,8 +107,8 @@ final class IliasUserDebugDisplay implements IDisplay {
 	private function getUserRows(int $userId): array {
 		if ($userId <= 0) {
 			return [
-				$this->row('Selected User ID', self::PARAM_USER_ID, ''),
-				$this->row('Status', 'user', 'No user selected.'),
+				$this->row($this->t('selected_user_id', 'Selected user ID'), self::PARAM_USER_ID, ''),
+				$this->row($this->t('column_status', 'Status'), 'user', $this->t('no_user_selected', 'No user selected.')),
 			];
 		}
 
@@ -112,22 +117,22 @@ final class IliasUserDebugDisplay implements IDisplay {
 
 		if (!$exists) {
 			return [
-				$this->row('Selected User ID', self::PARAM_USER_ID, $userId),
-				$this->row('Exists', 'ilObjUser::_lookupName()[user_id]', 'no'),
+				$this->row($this->t('selected_user_id', 'Selected user ID'), self::PARAM_USER_ID, $userId),
+				$this->row($this->t('exists', 'Exists'), 'ilObjUser::_lookupName()[user_id]', $this->t('value_no', 'no')),
 			];
 		}
 
 		return [
-			$this->row('Selected User ID', self::PARAM_USER_ID, $userId),
-			$this->row('Current Session User ID', 'ilObjUser::getId()', $this->getCurrentUserId()),
-			$this->row('Login', 'ilObjUser::_lookupLogin()', ilObjUser::_lookupLogin($userId)),
-			$this->row('Title', 'ilObjUser::_lookupName()[title]', (string)($name['title'] ?? '')),
-			$this->row('Firstname', 'ilObjUser::_lookupName()[firstname]', (string)($name['firstname'] ?? '')),
-			$this->row('Lastname', 'ilObjUser::_lookupName()[lastname]', (string)($name['lastname'] ?? '')),
-			$this->row('Fullname', 'ilObjUser::_lookupFullname()', ilObjUser::_lookupFullname($userId)),
-			$this->row('Email', 'ilObjUser::_lookupEmail()', ilObjUser::_lookupEmail($userId)),
-			$this->row('Language', 'ilObjUser::_lookupLanguage()', ilObjUser::_lookupLanguage($userId)),
-			$this->row('Exists', 'ilObjUser::_lookupName()[user_id]', 'yes'),
+			$this->row($this->t('selected_user_id', 'Selected user ID'), self::PARAM_USER_ID, $userId),
+			$this->row($this->t('current_session_user_id', 'Current session user ID'), 'ilObjUser::getId()', $this->getCurrentUserId()),
+			$this->row($this->t('login', 'Login'), 'ilObjUser::_lookupLogin()', ilObjUser::_lookupLogin($userId)),
+			$this->row($this->t('column_title', 'Title'), 'ilObjUser::_lookupName()[title]', (string)($name['title'] ?? '')),
+			$this->row($this->t('first_name', 'First name'), 'ilObjUser::_lookupName()[firstname]', (string)($name['firstname'] ?? '')),
+			$this->row($this->t('last_name', 'Last name'), 'ilObjUser::_lookupName()[lastname]', (string)($name['lastname'] ?? '')),
+			$this->row($this->t('full_name', 'Full name'), 'ilObjUser::_lookupFullname()', ilObjUser::_lookupFullname($userId)),
+			$this->row($this->t('email', 'Email'), 'ilObjUser::_lookupEmail()', ilObjUser::_lookupEmail($userId)),
+			$this->row($this->t('language', 'Language'), 'ilObjUser::_lookupLanguage()', ilObjUser::_lookupLanguage($userId)),
+			$this->row($this->t('exists', 'Exists'), 'ilObjUser::_lookupName()[user_id]', $this->t('value_yes', 'yes')),
 		];
 	}
 
@@ -139,24 +144,24 @@ final class IliasUserDebugDisplay implements IDisplay {
 		$profile = $this->getProfileData($userId);
 
 		return [
-			$this->row('Active', 'ilObjUser::_lookupActive()', ilObjUser::_lookupActive($userId) ? 'yes' : 'no'),
-			$this->row('Authentication Mode', 'ilObjUser::_lookupAuthMode()', ilObjUser::_lookupAuthMode($userId)),
-			$this->row('External Account', 'ilObjUser::_lookupExternalAccount()', ilObjUser::_lookupExternalAccount($userId)),
-			$this->row('First Login', 'ilObjUser::_lookupFirstLogin()', ilObjUser::_lookupFirstLogin($userId)),
-			$this->row('Last Login', 'ilObjUser::_lookupLastLogin()', ilObjUser::_lookupLastLogin($userId)),
-			$this->row('Created', 'usr_data.create_date', $this->profileValue($profile, 'create_date')),
-			$this->row('Last Update', 'usr_data.last_update', $this->profileValue($profile, 'last_update')),
-			$this->row('Approve Date', 'usr_data.approve_date', $this->profileValue($profile, 'approve_date')),
-			$this->row('Agreement Date', 'usr_data.agree_date', $this->profileValue($profile, 'agree_date')),
-			$this->row('Inactivation Date', 'usr_data.inactivation_date', $this->profileValue($profile, 'inactivation_date')),
-			$this->row('Login Attempts', 'usr_data.login_attempts', $this->profileValue($profile, 'login_attempts')),
-			$this->row('Password Policy Reset', 'usr_data.passwd_policy_reset', $this->boolProfileValue($profile, 'passwd_policy_reset')),
-			$this->row('Profile Incomplete', 'usr_data.profile_incomplete', $this->boolProfileValue($profile, 'profile_incomplete')),
-			$this->row('Self Registered', 'usr_data.is_self_registered', $this->boolProfileValue($profile, 'is_self_registered')),
-			$this->row('Time Limit Unlimited', 'usr_data.time_limit_unlimited', $this->boolProfileValue($profile, 'time_limit_unlimited')),
-			$this->row('Time Limit From', 'usr_data.time_limit_from', $this->timestampProfileValue($profile, 'time_limit_from')),
-			$this->row('Time Limit Until', 'usr_data.time_limit_until', $this->timestampProfileValue($profile, 'time_limit_until')),
-			$this->row('Time Limit Owner', 'usr_data.time_limit_owner', $this->profileValue($profile, 'time_limit_owner')),
+			$this->row($this->t('active', 'Active'), 'ilObjUser::_lookupActive()', ilObjUser::_lookupActive($userId) ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no')),
+			$this->row($this->t('authentication_mode', 'Authentication mode'), 'ilObjUser::_lookupAuthMode()', ilObjUser::_lookupAuthMode($userId)),
+			$this->row($this->t('external_account', 'External account'), 'ilObjUser::_lookupExternalAccount()', ilObjUser::_lookupExternalAccount($userId)),
+			$this->row($this->t('first_login', 'First login'), 'ilObjUser::_lookupFirstLogin()', ilObjUser::_lookupFirstLogin($userId)),
+			$this->row($this->t('last_login', 'Last login'), 'ilObjUser::_lookupLastLogin()', ilObjUser::_lookupLastLogin($userId)),
+			$this->row($this->t('created', 'Created'), 'usr_data.create_date', $this->profileValue($profile, 'create_date')),
+			$this->row($this->t('last_update', 'Last update'), 'usr_data.last_update', $this->profileValue($profile, 'last_update')),
+			$this->row($this->t('approve_date', 'Approval date'), 'usr_data.approve_date', $this->profileValue($profile, 'approve_date')),
+			$this->row($this->t('agreement_date', 'Agreement date'), 'usr_data.agree_date', $this->profileValue($profile, 'agree_date')),
+			$this->row($this->t('inactivation_date', 'Inactivation date'), 'usr_data.inactivation_date', $this->profileValue($profile, 'inactivation_date')),
+			$this->row($this->t('login_attempts', 'Login attempts'), 'usr_data.login_attempts', $this->profileValue($profile, 'login_attempts')),
+			$this->row($this->t('password_policy_reset', 'Password policy reset'), 'usr_data.passwd_policy_reset', $this->boolProfileValue($profile, 'passwd_policy_reset')),
+			$this->row($this->t('profile_incomplete', 'Profile incomplete'), 'usr_data.profile_incomplete', $this->boolProfileValue($profile, 'profile_incomplete')),
+			$this->row($this->t('self_registered', 'Self-registered'), 'usr_data.is_self_registered', $this->boolProfileValue($profile, 'is_self_registered')),
+			$this->row($this->t('time_limit_unlimited', 'Unlimited time limit'), 'usr_data.time_limit_unlimited', $this->boolProfileValue($profile, 'time_limit_unlimited')),
+			$this->row($this->t('time_limit_from', 'Time limit from'), 'usr_data.time_limit_from', $this->timestampProfileValue($profile, 'time_limit_from')),
+			$this->row($this->t('time_limit_until', 'Time limit until'), 'usr_data.time_limit_until', $this->timestampProfileValue($profile, 'time_limit_until')),
+			$this->row($this->t('time_limit_owner', 'Time limit owner'), 'usr_data.time_limit_owner', $this->profileValue($profile, 'time_limit_owner')),
 		];
 	}
 
@@ -194,7 +199,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 			$rows[] = [
 				'role_id' => $roleId,
 				'title' => ilObject::_lookupTitle($roleId),
-				'type' => in_array($roleId, $globalRoleIds, true) ? 'global' : 'local / linked',
+				'type' => in_array($roleId, $globalRoleIds, true) ? $this->t('role_type_global', 'global') : $this->t('role_type_local_linked', 'local / linked'),
 			];
 		}
 
@@ -277,7 +282,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 			return '';
 		}
 
-		return ((int)$profile[$key]) > 0 ? 'yes' : 'no';
+		return ((int)$profile[$key]) > 0 ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 	}
 
 	private function timestampProfileValue(array $profile, string $key): string {
@@ -314,7 +319,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 		}
 
 		if (is_bool($value)) {
-			return $value ? 'yes' : 'no';
+			return $value ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 		}
 
 		if (is_scalar($value)) {
@@ -330,5 +335,27 @@ final class IliasUserDebugDisplay implements IDisplay {
 		}
 
 		return get_debug_type($value);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_user_debug_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

@@ -1,25 +1,32 @@
+<?php
+$translations = is_array($this->_['translations'] ?? null) ? $this->_['translations'] : [];
+$t = static function(string $key, string $fallback) use ($translations): string {
+	$value = trim((string)($translations[$key] ?? ''));
+	return $value !== '' ? $value : $fallback;
+};
+?>
 <div class="base3ilias-log">
-	<h3>ILIAS Log</h3>
+	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS log')); ?></h3>
 
 	<div class="log-meta">
-		<div><strong>Quelle:</strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['logPath']); ?></span></div>
-		<div><strong>Letztes Update:</strong> <span id="ilias-log-lastupdate" class="mono">–</span></div>
+		<div><strong><?php echo htmlspecialchars($t('source', 'Source:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['logPath']); ?></span></div>
+		<div><strong><?php echo htmlspecialchars($t('last_update', 'Last update:')); ?></strong> <span id="ilias-log-lastupdate" class="mono">–</span></div>
 	</div>
 
 	<div class="log-actions">
 		<label class="log-num">
-			Einträge:
+			<?php echo htmlspecialchars($t('entries', 'Entries:')); ?>
 			<input type="number" id="ilias-log-num" min="1" max="<?php echo (int)$this->_['maxNum']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" onchange="iliasLogRefresh(true)">
 		</label>
 
-		<button type="button" onclick="iliasLogRefresh(true)">Jetzt aktualisieren</button>
+		<button type="button" onclick="iliasLogRefresh(true)"><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
 
 		<label class="log-autorefresh">
 			<input type="checkbox" id="ilias-log-autorefresh" checked onchange="iliasLogToggleAutoRefresh()">
-			Auto-Refresh (3s)
+			<?php echo htmlspecialchars($t('auto_refresh', 'Auto-refresh (3s)')); ?>
 		</label>
 
-		<label id="ilias-log-loading">Bitte warten…</label>
+		<label id="ilias-log-loading"><?php echo htmlspecialchars($t('please_wait', 'Please wait…')); ?></label>
 	</div>
 
 	<div id="ilias-log-message" class="log-message" style="display: none;"></div>
@@ -28,11 +35,11 @@
 		<table class="log-table">
 			<thead>
 				<tr>
-					<th>Zeit</th>
-					<th>Request</th>
-					<th>Channel</th>
-					<th>Level</th>
-					<th>Log</th>
+					<th><?php echo htmlspecialchars($t('column_time', 'Time')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_request', 'Request')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_channel', 'Channel')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_level', 'Level')); ?></th>
+					<th><?php echo htmlspecialchars($t('column_log', 'Log')); ?></th>
 				</tr>
 			</thead>
 			<tbody id="ilias-log-body">
@@ -201,6 +208,11 @@
 </style>
 
 <script>
+	const ILIAS_LOG_I18N = <?php echo json_encode([
+		'no_logs' => $t('no_logs', 'No log entries found.'),
+		'invalid_json' => $t('invalid_json', 'The response could not be parsed as JSON.'),
+		'load_failed' => $t('load_failed', 'The log could not be loaded.')
+	], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 	const ILIAS_LOG_ENDPOINT = <?php echo json_encode((string)$this->_['endpoint']); ?>;
 
 	let iliasLogTimer = null;
@@ -244,7 +256,7 @@
 		const body = document.getElementById("ilias-log-body");
 
 		if (!rows || rows.length === 0) {
-			body.innerHTML = '<tr><td colspan="5" class="log-muted">Keine Logs gefunden.</td></tr>';
+			body.innerHTML = '<tr><td colspan="5" class="log-muted">' + iliasLogEsc(ILIAS_LOG_I18N.no_logs) + '</td></tr>';
 			return;
 		}
 
@@ -288,13 +300,13 @@
 			try {
 				json = JSON.parse(text);
 			} catch (e) {
-				iliasLogSetMessage("Die Antwort konnte nicht als JSON gelesen werden.");
+				iliasLogSetMessage(ILIAS_LOG_I18N.invalid_json);
 				iliasLogSetLoading(false);
 				return;
 			}
 
 			if (json.status !== "ok") {
-				iliasLogSetMessage(json.message || "Das Log konnte nicht geladen werden.");
+				iliasLogSetMessage(json.message || ILIAS_LOG_I18N.load_failed);
 				iliasLogSetLoading(false);
 				return;
 			}
@@ -310,7 +322,7 @@
 			iliasLogRenderRows((json.data && json.data.logs) ? json.data.logs : []);
 
 		} catch (err) {
-			iliasLogSetMessage("Das Log konnte nicht geladen werden.");
+			iliasLogSetMessage(ILIAS_LOG_I18N.load_failed);
 		}
 
 		iliasLogSetLoading(false);

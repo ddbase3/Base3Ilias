@@ -8,6 +8,8 @@ use ilIniFile;
 
 final class IliasSystemHealthDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	public function __construct(
 		private readonly IMvcView $view,
 		private readonly ilIniFile $ilIliasIniFile
@@ -22,18 +24,21 @@ final class IliasSystemHealthDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS system health overview.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS system health overview.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$sections = $this->getSections();
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasSystemHealthDisplay.php');
 
 		$this->view->assign('sections', $sections);
 		$this->view->assign('summary', $this->getSummary($sections));
 		$this->view->assign('generatedAt', date('c'));
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -59,52 +64,52 @@ final class IliasSystemHealthDisplay implements IDisplay {
 
 		return [
 			[
-				'title' => 'Server & Client Paths',
-				'description' => 'Zentrale ILIAS-Installations- und Client-Pfade.',
+				'title' => $this->t('section_server_client_paths_title', 'Server and client paths'),
+				'description' => $this->t('section_server_client_paths_description', 'Central ILIAS installation and client paths.'),
 				'rows' => [
-					$this->checkDirectory('ILIAS Absolute Path', '[server] absolute_path', $absolutePath, true, true, false),
-					$this->checkDirectory('Public Client Path', '[clients] path', $clientPath, true, true, false),
-					$this->checkDirectory('Default Client Directory', '[clients] path + default', $defaultClientPath, true, true, false),
-					$this->checkFile('Client Ini File', '[clients] path + default + inifile', $clientIniFile, true, true, false),
-					$this->checkDirectory('Data Directory', '[clients] datadir', $clientDataDir, true, true, true),
-					$this->checkDirectory('Default Client Data Directory', '[clients] datadir + default', $defaultClientDataDir, true, true, true),
+					$this->checkDirectory($this->t('ilias_absolute_path', 'ILIAS absolute path'), '[server] absolute_path', $absolutePath, true, true, false),
+					$this->checkDirectory($this->t('public_client_path', 'Public client path'), '[clients] path', $clientPath, true, true, false),
+					$this->checkDirectory($this->t('default_client_directory', 'Default client directory'), '[clients] path + default', $defaultClientPath, true, true, false),
+					$this->checkFile($this->t('client_ini_file', 'Client INI file'), '[clients] path + default + inifile', $clientIniFile, true, true, false),
+					$this->checkDirectory($this->t('data_directory', 'Data directory'), '[clients] datadir', $clientDataDir, true, true, true),
+					$this->checkDirectory($this->t('default_client_data_directory', 'Default client data directory'), '[clients] datadir + default', $defaultClientDataDir, true, true, true),
 				],
 			],
 			[
-				'title' => 'Logs',
-				'description' => 'Log-Verzeichnisse und Logdateien aus der ILIAS-Konfiguration.',
+				'title' => $this->t('section_logs_title', 'Logs'),
+				'description' => $this->t('section_logs_description', 'Log directories and log files from the ILIAS configuration.'),
 				'rows' => [
-					$this->checkDirectory('Log Directory', '[log] path', $logPath, true, true, true),
-					$this->checkFile('Log File', '[log] path + file', $logFullPath, true, true, true),
-					$this->checkDirectory('Error Log Directory', '[log] error_path', $errorPath, true, true, true),
+					$this->checkDirectory($this->t('log_directory', 'Log directory'), '[log] path', $logPath, true, true, true),
+					$this->checkFile($this->t('log_file', 'Log file'), '[log] path + file', $logFullPath, true, true, true),
+					$this->checkDirectory($this->t('error_log_directory', 'Error log directory'), '[log] error_path', $errorPath, true, true, true),
 				],
 			],
 			[
-				'title' => 'BASE3 / Component Paths',
-				'description' => 'Pfade der BASE3-Ilias-Integration.',
+				'title' => $this->t('section_component_paths_title', 'BASE3 / component paths'),
+				'description' => $this->t('section_component_paths_description', 'Paths of the BASE3 ILIAS integration.'),
 				'rows' => [
-					$this->checkDirectory('Components Directory', 'DIR_COMPONENTS', $componentPath, true, true, false),
-					$this->checkDirectory('Base3Ilias Component Directory', 'DIR_COMPONENTS + Base3/Base3Ilias', $base3IliasPath, true, true, false),
-					$this->checkDirectory('Base3Ilias Template Directory', 'Base3Ilias/tpl/Display', $base3IliasTemplatePath, true, true, false),
+					$this->checkDirectory($this->t('components_directory', 'Components directory'), 'DIR_COMPONENTS', $componentPath, true, true, false),
+					$this->checkDirectory($this->t('base3ilias_component_directory', 'Base3Ilias component directory'), 'DIR_COMPONENTS + Base3/Base3Ilias', $base3IliasPath, true, true, false),
+					$this->checkDirectory($this->t('base3ilias_template_directory', 'Base3Ilias template directory'), 'Base3Ilias/tpl/Display', $base3IliasTemplatePath, true, true, false),
 				],
 			],
 			[
-				'title' => 'External Tools',
-				'description' => 'Konfigurierte externe Programme aus [tools]. Leere optionale Werte werden als Info angezeigt.',
+				'title' => $this->t('section_external_tools_title', 'External tools'),
+				'description' => $this->t('section_external_tools_description', 'Configured external programs from [tools]. Empty optional values are shown as information.'),
 				'rows' => [
-					$this->checkExecutable('ImageMagick Convert', '[tools] convert', $this->read('tools', 'convert'), false),
-					$this->checkExecutable('Zip', '[tools] zip', $this->read('tools', 'zip'), false),
-					$this->checkExecutable('Unzip', '[tools] unzip', $this->read('tools', 'unzip'), false),
-					$this->checkExecutable('Java', '[tools] java', $this->read('tools', 'java'), false),
-					$this->checkExecutable('HTMLDoc', '[tools] htmldoc', $this->read('tools', 'htmldoc'), false),
-					$this->checkExecutable('FFmpeg', '[tools] ffmpeg', $this->read('tools', 'ffmpeg'), false),
-					$this->checkExecutable('Ghostscript', '[tools] ghostscript', $this->read('tools', 'ghostscript'), false),
-					$this->checkExecutable('LaTeX', '[tools] latex', $this->read('tools', 'latex'), false),
-					$this->checkExecutable('Virus Scan Command', '[tools] scancommand', $this->read('tools', 'scancommand'), false),
-					$this->checkExecutable('Clean Command', '[tools] cleancommand', $this->read('tools', 'cleancommand'), false),
-					$this->checkExecutable('FOP', '[tools] fop', $this->read('tools', 'fop'), false),
-					$this->checkExecutable('Less Compiler', '[tools] lessc', $this->read('tools', 'lessc'), false),
-					$this->checkExecutable('PhantomJS', '[tools] phantomjs', $this->read('tools', 'phantomjs'), false),
+					$this->checkExecutable($this->t('imagemagick_convert', 'ImageMagick Convert'), '[tools] convert', $this->read('tools', 'convert'), false),
+					$this->checkExecutable($this->t('zip', 'Zip'), '[tools] zip', $this->read('tools', 'zip'), false),
+					$this->checkExecutable($this->t('unzip', 'Unzip'), '[tools] unzip', $this->read('tools', 'unzip'), false),
+					$this->checkExecutable($this->t('java', 'Java'), '[tools] java', $this->read('tools', 'java'), false),
+					$this->checkExecutable($this->t('htmldoc', 'HTMLDoc'), '[tools] htmldoc', $this->read('tools', 'htmldoc'), false),
+					$this->checkExecutable($this->t('ffmpeg', 'FFmpeg'), '[tools] ffmpeg', $this->read('tools', 'ffmpeg'), false),
+					$this->checkExecutable($this->t('ghostscript', 'Ghostscript'), '[tools] ghostscript', $this->read('tools', 'ghostscript'), false),
+					$this->checkExecutable($this->t('latex', 'LaTeX'), '[tools] latex', $this->read('tools', 'latex'), false),
+					$this->checkExecutable($this->t('virus_scan_command', 'Virus scan command'), '[tools] scancommand', $this->read('tools', 'scancommand'), false),
+					$this->checkExecutable($this->t('clean_command', 'Clean command'), '[tools] cleancommand', $this->read('tools', 'cleancommand'), false),
+					$this->checkExecutable($this->t('fop', 'FOP'), '[tools] fop', $this->read('tools', 'fop'), false),
+					$this->checkExecutable($this->t('less_compiler', 'Less compiler'), '[tools] lessc', $this->read('tools', 'lessc'), false),
+					$this->checkExecutable($this->t('phantomjs', 'PhantomJS'), '[tools] phantomjs', $this->read('tools', 'phantomjs'), false),
 				],
 			],
 		];
@@ -112,70 +117,70 @@ final class IliasSystemHealthDisplay implements IDisplay {
 
 	private function checkDirectory(string $label, string $source, string $path, bool $required, bool $mustBeReadable, bool $mustBeWritable): array {
 		if ($path === '') {
-			return $this->row($label, $source, $path, 'directory', $required ? 'error' : 'info', $required ? 'Path is not configured.' : 'Optional path is not configured.');
+			return $this->row($label, $source, $path, 'directory', $required ? 'error' : 'info', $required ? $this->t('path_not_configured', 'Path is not configured.') : $this->t('optional_path_not_configured', 'Optional path is not configured.'));
 		}
 
 		if (!file_exists($path)) {
-			return $this->row($label, $source, $path, 'directory', 'error', 'Directory does not exist.');
+			return $this->row($label, $source, $path, 'directory', 'error', $this->t('directory_missing', 'Directory does not exist.'));
 		}
 
 		if (!is_dir($path)) {
-			return $this->row($label, $source, $path, 'directory', 'error', 'Path exists, but is not a directory.');
+			return $this->row($label, $source, $path, 'directory', 'error', $this->t('not_a_directory', 'Path exists, but is not a directory.'));
 		}
 
 		if ($mustBeReadable && !is_readable($path)) {
-			return $this->row($label, $source, $path, 'directory', 'error', 'Directory is not readable.', $this->getPathMeta($path));
+			return $this->row($label, $source, $path, 'directory', 'error', $this->t('directory_not_readable', 'Directory is not readable.'), $this->getPathMeta($path));
 		}
 
 		if ($mustBeWritable && !is_writable($path)) {
-			return $this->row($label, $source, $path, 'directory', 'warning', 'Directory is not writable.', $this->getPathMeta($path));
+			return $this->row($label, $source, $path, 'directory', 'warning', $this->t('directory_not_writable', 'Directory is not writable.'), $this->getPathMeta($path));
 		}
 
-		return $this->row($label, $source, $path, 'directory', 'ok', 'Directory is available.', $this->getPathMeta($path));
+		return $this->row($label, $source, $path, 'directory', 'ok', $this->t('directory_available', 'Directory is available.'), $this->getPathMeta($path));
 	}
 
 	private function checkFile(string $label, string $source, string $path, bool $required, bool $mustBeReadable, bool $mustBeWritable): array {
 		if ($path === '') {
-			return $this->row($label, $source, $path, 'file', $required ? 'error' : 'info', $required ? 'Path is not configured.' : 'Optional file is not configured.');
+			return $this->row($label, $source, $path, 'file', $required ? 'error' : 'info', $required ? $this->t('path_not_configured', 'Path is not configured.') : $this->t('optional_file_not_configured', 'Optional file is not configured.'));
 		}
 
 		if (!file_exists($path)) {
-			return $this->row($label, $source, $path, 'file', 'error', 'File does not exist.');
+			return $this->row($label, $source, $path, 'file', 'error', $this->t('file_missing', 'File does not exist.'));
 		}
 
 		if (!is_file($path)) {
-			return $this->row($label, $source, $path, 'file', 'error', 'Path exists, but is not a file.');
+			return $this->row($label, $source, $path, 'file', 'error', $this->t('not_a_file', 'Path exists, but is not a file.'));
 		}
 
 		if ($mustBeReadable && !is_readable($path)) {
-			return $this->row($label, $source, $path, 'file', 'error', 'File is not readable.', $this->getPathMeta($path));
+			return $this->row($label, $source, $path, 'file', 'error', $this->t('file_not_readable', 'File is not readable.'), $this->getPathMeta($path));
 		}
 
 		if ($mustBeWritable && !is_writable($path)) {
-			return $this->row($label, $source, $path, 'file', 'warning', 'File is not writable.', $this->getPathMeta($path));
+			return $this->row($label, $source, $path, 'file', 'warning', $this->t('file_not_writable', 'File is not writable.'), $this->getPathMeta($path));
 		}
 
-		return $this->row($label, $source, $path, 'file', 'ok', 'File is available.', $this->getPathMeta($path));
+		return $this->row($label, $source, $path, 'file', 'ok', $this->t('file_available', 'File is available.'), $this->getPathMeta($path));
 	}
 
 	private function checkExecutable(string $label, string $source, string $path, bool $required): array {
 		if ($path === '') {
-			return $this->row($label, $source, $path, 'executable', $required ? 'error' : 'info', $required ? 'Executable is not configured.' : 'Optional executable is not configured.');
+			return $this->row($label, $source, $path, 'executable', $required ? 'error' : 'info', $required ? $this->t('executable_not_configured', 'Executable is not configured.') : $this->t('optional_executable_not_configured', 'Optional executable is not configured.'));
 		}
 
 		if (!file_exists($path)) {
-			return $this->row($label, $source, $path, 'executable', 'warning', 'Executable does not exist at configured path.');
+			return $this->row($label, $source, $path, 'executable', 'warning', $this->t('executable_missing', 'Executable does not exist at the configured path.'));
 		}
 
 		if (!is_file($path)) {
-			return $this->row($label, $source, $path, 'executable', 'warning', 'Configured path is not a file.');
+			return $this->row($label, $source, $path, 'executable', 'warning', $this->t('configured_path_not_file', 'Configured path is not a file.'));
 		}
 
 		if (!is_executable($path)) {
-			return $this->row($label, $source, $path, 'executable', 'warning', 'File is not executable.', $this->getPathMeta($path));
+			return $this->row($label, $source, $path, 'executable', 'warning', $this->t('file_not_executable', 'File is not executable.'), $this->getPathMeta($path));
 		}
 
-		return $this->row($label, $source, $path, 'executable', 'ok', 'Executable is available.', $this->getPathMeta($path));
+		return $this->row($label, $source, $path, 'executable', 'ok', $this->t('executable_available', 'Executable is available.'), $this->getPathMeta($path));
 	}
 
 	private function row(string $label, string $source, string $path, string $type, string $status, string $message, array $meta = []): array {
@@ -200,7 +205,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$perms = fileperms($path);
 		if ($perms !== false) {
 			$meta[] = [
-				'label' => 'Permissions',
+				'label' => $this->t('permissions', 'Permissions'),
 				'value' => substr(sprintf('%o', $perms), -4),
 			];
 		}
@@ -208,7 +213,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$owner = fileowner($path);
 		if ($owner !== false) {
 			$meta[] = [
-				'label' => 'Owner UID',
+				'label' => $this->t('owner_uid', 'Owner UID'),
 				'value' => (string)$owner,
 			];
 		}
@@ -216,7 +221,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$group = filegroup($path);
 		if ($group !== false) {
 			$meta[] = [
-				'label' => 'Group GID',
+				'label' => $this->t('group_gid', 'Group GID'),
 				'value' => (string)$group,
 			];
 		}
@@ -224,7 +229,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$mtime = filemtime($path);
 		if ($mtime !== false) {
 			$meta[] = [
-				'label' => 'Modified',
+				'label' => $this->t('modified', 'Modified'),
 				'value' => date('Y-m-d H:i:s', $mtime),
 			];
 		}
@@ -233,7 +238,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 			$size = filesize($path);
 			if ($size !== false) {
 				$meta[] = [
-					'label' => 'Size',
+					'label' => $this->t('size', 'Size'),
 					'value' => $this->formatBytes($size),
 				];
 			}
@@ -330,5 +335,27 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		}
 
 		return $bytes . ' B';
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_system_health_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }

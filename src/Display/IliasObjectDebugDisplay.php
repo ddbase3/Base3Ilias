@@ -9,6 +9,8 @@ use ilTree;
 
 final class IliasObjectDebugDisplay implements IDisplay {
 
+	private array $translations = [];
+
 	private const PARAM_TARGET_REF_ID = 'base3_object_ref_id';
 	private const MAX_CHILDREN = 100;
 
@@ -26,13 +28,15 @@ final class IliasObjectDebugDisplay implements IDisplay {
 	}
 
 	public function getHelp(): string {
-		return 'ILIAS object and repository node debug overview.';
+		$this->loadTranslations();
+
+		return $this->t('help', 'ILIAS object and repository node debug overview.');
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		$this->loadTranslations();
 		$targetRefId = $this->getRequestTargetRefId();
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
 		$this->view->setTemplate('Display/IliasObjectDebugDisplay.php');
 
 		$this->view->assign('generatedAt', date('c'));
@@ -42,6 +46,7 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		$this->view->assign('pathRows', $this->getPathRows($targetRefId));
 		$this->view->assign('childRows', $this->getChildRows($targetRefId));
 		$this->view->assign('maxChildren', self::MAX_CHILDREN);
+		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
 	}
@@ -49,8 +54,8 @@ final class IliasObjectDebugDisplay implements IDisplay {
 	private function getObjectRows(int $targetRefId): array {
 		if ($targetRefId <= 0) {
 			return [
-				$this->row('Target Ref ID', self::PARAM_TARGET_REF_ID, ''),
-				$this->row('Status', 'target', 'No target ref_id given. Use ' . self::PARAM_TARGET_REF_ID . ' to inspect an object.'),
+				$this->row($this->t('target_ref_id', 'Target ref_id'), self::PARAM_TARGET_REF_ID, ''),
+				$this->row($this->t('column_status', 'Status'), 'target', $this->t('no_target', 'No target ref_id given. Use %s to inspect an object.', self::PARAM_TARGET_REF_ID)),
 			];
 		}
 
@@ -59,11 +64,11 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		$title = $objId > 0 ? ilObject::_lookupTitle($objId) : '';
 
 		return [
-			$this->row('Target Ref ID', self::PARAM_TARGET_REF_ID, $targetRefId),
-			$this->row('Object ID', 'ilObject::_lookupObjId()', $objId),
-			$this->row('Object Type', 'ilObject::_lookupType(ref_id, true)', $type),
-			$this->row('Title', 'ilObject::_lookupTitle(obj_id)', $title),
-			$this->row('Valid Object', 'obj_id > 0', $objId > 0 ? 'yes' : 'no'),
+			$this->row($this->t('target_ref_id', 'Target ref_id'), self::PARAM_TARGET_REF_ID, $targetRefId),
+			$this->row($this->t('object_id', 'Object ID'), 'ilObject::_lookupObjId()', $objId),
+			$this->row($this->t('object_type', 'Object type'), 'ilObject::_lookupType(ref_id, true)', $type),
+			$this->row($this->t('column_title', 'Title'), 'ilObject::_lookupTitle(obj_id)', $title),
+			$this->row($this->t('valid_object', 'Valid object'), 'obj_id > 0', $objId > 0 ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no')),
 		];
 	}
 
@@ -81,7 +86,7 @@ final class IliasObjectDebugDisplay implements IDisplay {
 					'ref_id' => '',
 					'obj_id' => '',
 					'type' => '',
-					'title' => 'Path could not be loaded: ' . $e->getMessage(),
+					'title' => $this->t('path_load_error', 'Path could not be loaded: %s', $e->getMessage()),
 				],
 			];
 		}
@@ -114,7 +119,7 @@ final class IliasObjectDebugDisplay implements IDisplay {
 					'ref_id' => '',
 					'obj_id' => '',
 					'type' => '',
-					'title' => 'Children could not be loaded: ' . $e->getMessage(),
+					'title' => $this->t('children_load_error', 'Children could not be loaded: %s', $e->getMessage()),
 					'description' => '',
 				],
 			];
@@ -182,7 +187,7 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		}
 
 		if (is_bool($value)) {
-			return $value ? 'yes' : 'no';
+			return $value ? $this->t('value_yes', 'yes') : $this->t('value_no', 'no');
 		}
 
 		if (is_scalar($value)) {
@@ -198,5 +203,27 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		}
 
 		return get_debug_type($value);
+	}
+
+	private function loadTranslations(): void {
+		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->loadBricks('Display');
+
+		$common = $this->view->getBricks('base3ilias_common');
+		$specific = $this->view->getBricks('ilias_object_debug_display');
+
+		$this->translations = array_merge(
+			is_array($common) ? $common : [],
+			is_array($specific) ? $specific : []
+		);
+	}
+
+	private function t(string $key, string $fallback, mixed ...$values): string {
+		$text = trim((string)($this->translations[$key] ?? ''));
+		if ($text === '') {
+			$text = $fallback;
+		}
+
+		return $values === [] ? $text : vsprintf($text, $values);
 	}
 }
