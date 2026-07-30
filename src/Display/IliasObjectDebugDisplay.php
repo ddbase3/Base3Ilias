@@ -4,6 +4,8 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\Api\IRequest;
+use Base3\LinkTarget\Api\ILinkTargetService;
 use ilObject;
 use ilTree;
 
@@ -15,7 +17,9 @@ final class IliasObjectDebugDisplay implements IDisplay {
 	private const MAX_CHILDREN = 100;
 
 	public function __construct(
+		private readonly IRequest $request,
 		private readonly IMvcView $view,
+		private readonly ILinkTargetService $linkTargetService,
 		private readonly ilTree $tree
 	) {}
 
@@ -42,6 +46,7 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		$this->view->assign('generatedAt', date('c'));
 		$this->view->assign('targetRefId', $targetRefId);
 		$this->view->assign('targetParamName', self::PARAM_TARGET_REF_ID);
+		$this->view->assign('endpoint', $this->buildEndpoint());
 		$this->view->assign('objectRows', $this->getObjectRows($targetRefId));
 		$this->view->assign('pathRows', $this->getPathRows($targetRefId));
 		$this->view->assign('childRows', $this->getChildRows($targetRefId));
@@ -141,14 +146,20 @@ final class IliasObjectDebugDisplay implements IDisplay {
 	}
 
 	private function getRequestTargetRefId(): int {
-		$params = [];
-		parse_str($this->serverValue('QUERY_STRING'), $params);
+		$value = $this->request->request(self::PARAM_TARGET_REF_ID);
 
-		if (isset($params[self::PARAM_TARGET_REF_ID]) && is_numeric($params[self::PARAM_TARGET_REF_ID])) {
-			return (int)$params[self::PARAM_TARGET_REF_ID];
+		if (is_numeric($value) && (int)$value > 0) {
+			return (int)$value;
 		}
 
 		return 0;
+	}
+
+	private function buildEndpoint(): string {
+		return $this->linkTargetService->getLink([
+			'name' => self::getName(),
+			'out' => 'html',
+		]);
 	}
 
 	private function row(string $label, string $key, mixed $value): array {
@@ -165,20 +176,6 @@ final class IliasObjectDebugDisplay implements IDisplay {
 		}
 
 		return $this->formatValue($row[$key]);
-	}
-
-	private function serverValue(string $key): string {
-		$value = filter_input(INPUT_SERVER, $key);
-
-		if ($value !== null && $value !== false) {
-			return (string)$value;
-		}
-
-		if (is_array($_SERVER ?? null) && array_key_exists($key, $_SERVER)) {
-			return $this->formatValue($_SERVER[$key]);
-		}
-
-		return '';
 	}
 
 	private function formatValue(mixed $value): string {

@@ -5,7 +5,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	return $value !== '' ? $value : $fallback;
 };
 ?>
-<div class="base3ilias-health">
+<div class="base3ilias-health" data-base3-display="iliassystemhealthdisplay">
 	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS system health')); ?></h3>
 
 	<div class="health-meta">
@@ -28,7 +28,15 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 			<span><strong><?php echo (int)$this->_['summary']['info']; ?></strong> <?php echo htmlspecialchars($t('status_info', 'Info')); ?></span>
 		</div>
 
-		<button type="button" onclick="window.location.reload()"><?php echo htmlspecialchars($t('check_again', 'Check again')); ?></button>
+		<form
+			class="health-refresh-form"
+			method="post"
+			action="<?php echo htmlspecialchars((string)$this->_['endpoint'], ENT_QUOTES); ?>"
+			data-base3-ajax-form
+		>
+			<button type="submit"><?php echo htmlspecialchars($t('check_again', 'Check again')); ?></button>
+		</form>
+		<div class="health-ajax-error" data-base3-ajax-error role="alert" hidden></div>
 	</div>
 
 	<?php foreach ((array)$this->_['sections'] as $section): ?>
@@ -169,6 +177,19 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	border-color: #bbb;
 }
 
+.health-refresh-form {
+	margin: 0;
+}
+
+.health-ajax-error {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid #d88;
+	background: #fff5f5;
+	color: #a33;
+	border-radius: 4px;
+}
+
 .health-section {
 	border-top: 1px solid #eee;
 	padding-top: 14px;
@@ -297,3 +318,73 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	background: #f8f8f8;
 }
 </style>
+
+<script>
+(() => {
+	const selector = '[data-base3-display="iliassystemhealthdisplay"]';
+	const failureMessage = <?php echo json_encode($t('ajax_request_failed', 'The display could not be updated.'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+
+	function setBusy(root, busy) {
+		root.setAttribute('aria-busy', busy ? 'true' : 'false');
+		root.querySelectorAll('[data-base3-ajax-form] button').forEach((button) => {
+			button.disabled = busy;
+		});
+	}
+
+	function setError(root, message) {
+		const element = root.querySelector('[data-base3-ajax-error]');
+		if (!element) return;
+
+		element.textContent = message;
+		element.hidden = message === '';
+	}
+
+	async function submit(root, form) {
+		setError(root, '');
+		setBusy(root, true);
+
+		try {
+			const response = await fetch(form.action, {
+				method: 'POST',
+				body: new FormData(form),
+				credentials: 'same-origin',
+				headers: {
+					'Accept': 'text/html',
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error(failureMessage + ' (' + response.status + ')');
+			}
+
+			const html = await response.text();
+			const responseDocument = new DOMParser().parseFromString(html, 'text/html');
+			const nextRoot = responseDocument.querySelector(selector);
+
+			if (!nextRoot) {
+				throw new Error(failureMessage);
+			}
+
+			root.replaceWith(nextRoot);
+			initialize(nextRoot);
+		} catch (error) {
+			setError(root, error instanceof Error ? error.message : failureMessage);
+			setBusy(root, false);
+		}
+	}
+
+	function initialize(root) {
+		const form = root.querySelector('[data-base3-ajax-form]');
+		if (!form || form.dataset.base3AjaxBound === 'true') return;
+
+		form.dataset.base3AjaxBound = 'true';
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			submit(root, form);
+		});
+	}
+
+	document.querySelectorAll(selector).forEach(initialize);
+})();
+</script>

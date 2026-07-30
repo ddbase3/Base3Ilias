@@ -5,7 +5,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	return $value !== '' ? $value : $fallback;
 };
 ?>
-<div class="base3ilias-permission">
+<div class="base3ilias-permission" data-base3-display="iliaspermissiondebugdisplay">
 	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS permission debug')); ?></h3>
 
 	<div class="permission-meta">
@@ -13,28 +13,46 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
-	<div class="permission-actions">
+	<form
+		class="permission-actions"
+		method="post"
+		action="<?php echo htmlspecialchars((string)$this->_['endpoint'], ENT_QUOTES); ?>"
+		data-base3-ajax-form
+	>
 		<label class="permission-ref">
 			<?php echo htmlspecialchars($t('target_ref_id_input', 'Target ref_id:')); ?>
-			<input type="number" id="permission-target-ref-id" value="<?php echo (int)$this->_['targetRefId']; ?>" min="1">
+			<input
+				type="number"
+				name="<?php echo htmlspecialchars((string)$this->_['targetParamName'], ENT_QUOTES); ?>"
+				value="<?php echo (int)$this->_['targetRefId']; ?>"
+				min="1"
+			>
 		</label>
 
 		<label class="permission-ref">
 			<?php echo htmlspecialchars($t('user_id_input', 'User ID:')); ?>
-			<input type="number" id="permission-user-id" value="<?php echo (int)$this->_['userId']; ?>" min="1">
+			<input
+				type="number"
+				name="<?php echo htmlspecialchars((string)$this->_['userParamName'], ENT_QUOTES); ?>"
+				value="<?php echo (int)$this->_['userId']; ?>"
+				min="1"
+				data-base3-user-id
+			>
 		</label>
 
-		<button type="button" onclick="permissionApplyParams()"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
-		<button type="button" onclick="permissionUseCurrentUser()"><?php echo htmlspecialchars($t('current_user', 'Current user')); ?></button>
+		<button type="submit"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
+		<button type="button" data-base3-current-user><?php echo htmlspecialchars($t('current_user', 'Current user')); ?></button>
 
 		<div class="permission-note">
-			<?php echo htmlspecialchars($t('uses_own_url_parameters', 'Uses its own URL parameters:')); ?>
+			<?php echo htmlspecialchars($t('uses_own_url_parameters', 'Uses its own request parameters:')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['targetParamName']); ?></span>
 			<?php echo htmlspecialchars($t('and', 'and')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['userParamName']); ?></span>.
 			<span class="mono">ref_id</span> <?php echo htmlspecialchars($t('ref_id_unchanged', 'is not changed.')); ?>
 		</div>
-	</div>
+	</form>
+
+	<div class="permission-ajax-error" data-base3-ajax-error role="alert" hidden></div>
 
 	<div class="permission-section">
 		<div class="permission-section-head">
@@ -469,6 +487,15 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	font-size: 13px;
 }
 
+.permission-ajax-error {
+	margin-bottom: 16px;
+	padding: 10px 12px;
+	border: 1px solid #d88;
+	background: #fff5f5;
+	color: #a33;
+	border-radius: 4px;
+}
+
 .permission-pill {
 	display: inline-block;
 	padding: 2px 8px;
@@ -506,36 +533,81 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 </style>
 
 <script>
-	const PERMISSION_TARGET_PARAM = <?php echo json_encode((string)$this->_['targetParamName']); ?>;
-	const PERMISSION_USER_PARAM = <?php echo json_encode((string)$this->_['userParamName']); ?>;
-	const PERMISSION_CURRENT_USER_ID = <?php echo (int)$this->_['currentUserId']; ?>;
+(() => {
+	const selector = '[data-base3-display="iliaspermissiondebugdisplay"]';
+	const currentUserId = <?php echo (int)$this->_['currentUserId']; ?>;
+	const failureMessage = <?php echo json_encode($t('ajax_request_failed', 'The display could not be updated.'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
-	function permissionApplyParams() {
-		const targetInput = document.getElementById("permission-target-ref-id");
-		const userInput = document.getElementById("permission-user-id");
-
-		const targetRefId = String(targetInput.value || "").trim();
-		const userId = String(userInput.value || "").trim();
-
-		const url = new URL(window.location.href);
-
-		if (targetRefId === "" || targetRefId === "0") {
-			url.searchParams.delete(PERMISSION_TARGET_PARAM);
-		 } else {
-			url.searchParams.set(PERMISSION_TARGET_PARAM, targetRefId);
-		}
-
-		if (userId === "" || userId === "0") {
-			url.searchParams.delete(PERMISSION_USER_PARAM);
-		} else {
-			url.searchParams.set(PERMISSION_USER_PARAM, userId);
-		}
-
-		window.location.href = url.toString();
+	function setBusy(root, busy) {
+		root.setAttribute('aria-busy', busy ? 'true' : 'false');
+		root.querySelectorAll('[data-base3-ajax-form] button').forEach((button) => {
+			button.disabled = busy;
+		});
 	}
 
-	function permissionUseCurrentUser() {
-		document.getElementById("permission-user-id").value = String(PERMISSION_CURRENT_USER_ID);
-		permissionApplyParams();
+	function setError(root, message) {
+		const element = root.querySelector('[data-base3-ajax-error]');
+		if (!element) return;
+
+		element.textContent = message;
+		element.hidden = message === '';
 	}
+
+	async function submit(root, form) {
+		setError(root, '');
+		setBusy(root, true);
+
+		try {
+			const response = await fetch(form.action, {
+				method: 'POST',
+				body: new FormData(form),
+				credentials: 'same-origin',
+				headers: {
+					'Accept': 'text/html',
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error(failureMessage + ' (' + response.status + ')');
+			}
+
+			const html = await response.text();
+			const responseDocument = new DOMParser().parseFromString(html, 'text/html');
+			const nextRoot = responseDocument.querySelector(selector);
+
+			if (!nextRoot) {
+				throw new Error(failureMessage);
+			}
+
+			root.replaceWith(nextRoot);
+			initialize(nextRoot);
+		} catch (error) {
+			setError(root, error instanceof Error ? error.message : failureMessage);
+			setBusy(root, false);
+		}
+	}
+
+	function initialize(root) {
+		const form = root.querySelector('[data-base3-ajax-form]');
+		if (!form || form.dataset.base3AjaxBound === 'true') return;
+
+		form.dataset.base3AjaxBound = 'true';
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			submit(root, form);
+		});
+
+		const currentUserButton = root.querySelector('[data-base3-current-user]');
+		if (currentUserButton) {
+			currentUserButton.addEventListener('click', () => {
+				const userIdInput = form.querySelector('[data-base3-user-id]');
+				if (userIdInput) userIdInput.value = String(currentUserId);
+				form.requestSubmit();
+			});
+		}
+	}
+
+	document.querySelectorAll(selector).forEach(initialize);
+})();
 </script>

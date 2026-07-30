@@ -4,6 +4,8 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\Api\IRequest;
+use Base3\LinkTarget\Api\ILinkTargetService;
 use ilObject;
 use ilObjUser;
 use ilRbacReview;
@@ -25,7 +27,9 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 	];
 
 	public function __construct(
+		private readonly IRequest $request,
 		private readonly IMvcView $view,
+		private readonly ILinkTargetService $linkTargetService,
 		private readonly ilObjUser $ilUser,
 		private readonly ilRbacReview $rbacreview
 	) {}
@@ -64,6 +68,7 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 		$this->view->assign('currentUserId', $this->getCurrentUserId());
 		$this->view->assign('targetParamName', self::PARAM_TARGET_REF_ID);
 		$this->view->assign('userParamName', self::PARAM_USER_ID);
+		$this->view->assign('endpoint', $this->buildEndpoint());
 		$this->view->assign('targetRows', $this->getTargetRows($targetRefId));
 		$this->view->assign('userRows', $this->getUserRows($userId));
 		$this->view->assign('assignedRoleRows', $this->getAssignedRoleRows($assignedRoleIds, $globalRoleIds));
@@ -282,30 +287,30 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 	}
 
 	private function getRequestTargetRefId(): int {
-		$params = $this->getQueryParams();
+		$value = $this->request->request(self::PARAM_TARGET_REF_ID);
 
-		if (isset($params[self::PARAM_TARGET_REF_ID]) && is_numeric($params[self::PARAM_TARGET_REF_ID])) {
-			return (int)$params[self::PARAM_TARGET_REF_ID];
+		if (is_numeric($value) && (int)$value > 0) {
+			return (int)$value;
 		}
 
 		return 0;
 	}
 
 	private function getRequestUserId(): int {
-		$params = $this->getQueryParams();
+		$value = $this->request->request(self::PARAM_USER_ID);
 
-		if (isset($params[self::PARAM_USER_ID]) && is_numeric($params[self::PARAM_USER_ID]) && (int)$params[self::PARAM_USER_ID] > 0) {
-			return (int)$params[self::PARAM_USER_ID];
+		if (is_numeric($value) && (int)$value > 0) {
+			return (int)$value;
 		}
 
 		return $this->getCurrentUserId();
 	}
 
-	private function getQueryParams(): array {
-		$params = [];
-		parse_str($this->serverValue('QUERY_STRING'), $params);
-
-		return $params;
+	private function buildEndpoint(): string {
+		return $this->linkTargetService->getLink([
+			'name' => self::getName(),
+			'out' => 'html',
+		]);
 	}
 
 	private function getCurrentUserId(): int {
@@ -318,20 +323,6 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 			'key' => $key,
 			'value' => $this->formatValue($value),
 		];
-	}
-
-	private function serverValue(string $key): string {
-		$value = filter_input(INPUT_SERVER, $key);
-
-		if ($value !== null && $value !== false) {
-			return (string)$value;
-		}
-
-		if (is_array($_SERVER ?? null) && array_key_exists($key, $_SERVER)) {
-			return $this->formatValue($_SERVER[$key]);
-		}
-
-		return '';
 	}
 
 	private function formatValue(mixed $value): string {

@@ -4,6 +4,8 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\Api\IRequest;
+use Base3\LinkTarget\Api\ILinkTargetService;
 use ilObject;
 use ilObjUser;
 use ilRbacReview;
@@ -30,7 +32,9 @@ final class IliasUserDebugDisplay implements IDisplay {
 	];
 
 	public function __construct(
+		private readonly IRequest $request,
 		private readonly IMvcView $view,
+		private readonly ILinkTargetService $linkTargetService,
 		private readonly ilObjUser $ilUser,
 		private readonly ilRbacReview $rbacreview
 	) {}
@@ -60,6 +64,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 		$this->view->assign('userIdParamName', self::PARAM_USER_ID);
 		$this->view->assign('userLoginParamName', self::PARAM_USER_LOGIN);
 		$this->view->assign('currentUserId', $this->getCurrentUserId());
+		$this->view->assign('endpoint', $this->buildEndpoint());
 		$this->view->assign('selectedUserId', $userId);
 		$this->view->assign('selectedLogin', (string)$selection['login']);
 		$this->view->assign('selectionMessage', (string)$selection['message']);
@@ -74,9 +79,7 @@ final class IliasUserDebugDisplay implements IDisplay {
 	}
 
 	private function getUserSelection(): array {
-		$params = $this->getQueryParams();
-
-		$login = trim((string)($params[self::PARAM_USER_LOGIN] ?? ''));
+		$login = trim((string)$this->request->request(self::PARAM_USER_LOGIN, ''));
 
 		if ($login !== '') {
 			$lookupId = ilObjUser::_lookupId($login);
@@ -89,9 +92,10 @@ final class IliasUserDebugDisplay implements IDisplay {
 			];
 		}
 
-		if (isset($params[self::PARAM_USER_ID]) && is_numeric($params[self::PARAM_USER_ID]) && (int)$params[self::PARAM_USER_ID] > 0) {
+		$userId = $this->request->request(self::PARAM_USER_ID);
+		if (is_numeric($userId) && (int)$userId > 0) {
 			return [
-				'user_id' => (int)$params[self::PARAM_USER_ID],
+				'user_id' => (int)$userId,
 				'login' => '',
 				'message' => '',
 			];
@@ -250,11 +254,11 @@ final class IliasUserDebugDisplay implements IDisplay {
 		return ((int)($name['user_id'] ?? 0)) > 0;
 	}
 
-	private function getQueryParams(): array {
-		$params = [];
-		parse_str($this->serverValue('QUERY_STRING'), $params);
-
-		return $params;
+	private function buildEndpoint(): string {
+		return $this->linkTargetService->getLink([
+			'name' => self::getName(),
+			'out' => 'html',
+		]);
 	}
 
 	private function getCurrentUserId(): int {
@@ -297,20 +301,6 @@ final class IliasUserDebugDisplay implements IDisplay {
 		}
 
 		return $value . ' (' . date('Y-m-d H:i:s', $value) . ')';
-	}
-
-	private function serverValue(string $key): string {
-		$value = filter_input(INPUT_SERVER, $key);
-
-		if ($value !== null && $value !== false) {
-			return (string)$value;
-		}
-
-		if (is_array($_SERVER ?? null) && array_key_exists($key, $_SERVER)) {
-			return $this->formatValue($_SERVER[$key]);
-		}
-
-		return '';
 	}
 
 	private function formatValue(mixed $value): string {

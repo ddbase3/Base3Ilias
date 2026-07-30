@@ -5,7 +5,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	return $value !== '' ? $value : $fallback;
 };
 ?>
-<div class="base3ilias-object">
+<div class="base3ilias-object" data-base3-display="iliasobjectdebugdisplay">
 	<h3><?php echo htmlspecialchars($t('page_title', 'ILIAS object debug')); ?></h3>
 
 	<div class="object-meta">
@@ -13,20 +13,32 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 		<div><strong><?php echo htmlspecialchars($t('generated', 'Generated:')); ?></strong> <span class="mono"><?php echo htmlspecialchars((string)$this->_['generatedAt']); ?></span></div>
 	</div>
 
-	<div class="object-actions">
+	<form
+		class="object-actions"
+		method="post"
+		action="<?php echo htmlspecialchars((string)$this->_['endpoint'], ENT_QUOTES); ?>"
+		data-base3-ajax-form
+	>
 		<label class="object-ref">
 			<?php echo htmlspecialchars($t('target_ref_id_input', 'Target ref_id:')); ?>
-			<input type="number" id="object-target-ref-id" value="<?php echo (int)$this->_['targetRefId']; ?>" min="1">
+			<input
+				type="number"
+				name="<?php echo htmlspecialchars((string)$this->_['targetParamName'], ENT_QUOTES); ?>"
+				value="<?php echo (int)$this->_['targetRefId']; ?>"
+				min="1"
+			>
 		</label>
 
-		<button type="button" onclick="objectApplyParams()"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
+		<button type="submit"><?php echo htmlspecialchars($t('check_now', 'Check')); ?></button>
 
 		<div class="object-note">
-			<?php echo htmlspecialchars($t('uses_own_url_parameter', 'Uses its own URL parameter:')); ?>
+			<?php echo htmlspecialchars($t('uses_own_url_parameter', 'Uses its own request parameter:')); ?>
 			<span class="mono"><?php echo htmlspecialchars((string)$this->_['targetParamName']); ?></span>.
 			<span class="mono">ref_id</span> <?php echo htmlspecialchars($t('ref_id_unchanged', 'is not changed.')); ?>
 		</div>
-	</div>
+	</form>
+
+	<div class="object-ajax-error" data-base3-ajax-error role="alert" hidden></div>
 
 	<div class="object-section">
 		<div class="object-section-head">
@@ -313,22 +325,83 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	padding: 8px 10px;
 	font-size: 13px;
 }
+
+.object-ajax-error {
+	margin-bottom: 16px;
+	padding: 10px 12px;
+	border: 1px solid #d88;
+	background: #fff5f5;
+	color: #a33;
+	border-radius: 4px;
+}
 </style>
 
 <script>
-	const OBJECT_TARGET_PARAM = <?php echo json_encode((string)$this->_['targetParamName']); ?>;
+(() => {
+	const selector = '[data-base3-display="iliasobjectdebugdisplay"]';
+	const failureMessage = <?php echo json_encode($t('ajax_request_failed', 'The display could not be updated.'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
-	function objectApplyParams() {
-		const targetInput = document.getElementById("object-target-ref-id");
-		const targetRefId = String(targetInput.value || "").trim();
-		const url = new URL(window.location.href);
-
-		if (targetRefId === "" || targetRefId === "0") {
-			url.searchParams.delete(OBJECT_TARGET_PARAM);
-		} else {
-			url.searchParams.set(OBJECT_TARGET_PARAM, targetRefId);
-		}
-
-		window.location.href = url.toString();
+	function setBusy(root, busy) {
+		root.setAttribute('aria-busy', busy ? 'true' : 'false');
+		root.querySelectorAll('[data-base3-ajax-form] button').forEach((button) => {
+			button.disabled = busy;
+		});
 	}
+
+	function setError(root, message) {
+		const element = root.querySelector('[data-base3-ajax-error]');
+		if (!element) return;
+
+		element.textContent = message;
+		element.hidden = message === '';
+	}
+
+	async function submit(root, form) {
+		setError(root, '');
+		setBusy(root, true);
+
+		try {
+			const response = await fetch(form.action, {
+				method: 'POST',
+				body: new FormData(form),
+				credentials: 'same-origin',
+				headers: {
+					'Accept': 'text/html',
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error(failureMessage + ' (' + response.status + ')');
+			}
+
+			const html = await response.text();
+			const responseDocument = new DOMParser().parseFromString(html, 'text/html');
+			const nextRoot = responseDocument.querySelector(selector);
+
+			if (!nextRoot) {
+				throw new Error(failureMessage);
+			}
+
+			root.replaceWith(nextRoot);
+			initialize(nextRoot);
+		} catch (error) {
+			setError(root, error instanceof Error ? error.message : failureMessage);
+			setBusy(root, false);
+		}
+	}
+
+	function initialize(root) {
+		const form = root.querySelector('[data-base3-ajax-form]');
+		if (!form || form.dataset.base3AjaxBound === 'true') return;
+
+		form.dataset.base3AjaxBound = 'true';
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			submit(root, form);
+		});
+	}
+
+	document.querySelectorAll(selector).forEach(initialize);
+})();
 </script>

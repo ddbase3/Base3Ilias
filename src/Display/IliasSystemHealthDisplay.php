@@ -4,6 +4,7 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\LinkTarget\Api\ILinkTargetService;
 use ilIniFile;
 
 final class IliasSystemHealthDisplay implements IDisplay {
@@ -12,6 +13,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 
 	public function __construct(
 		private readonly IMvcView $view,
+		private readonly ILinkTargetService $linkTargetService,
 		private readonly ilIniFile $ilIliasIniFile
 	) {}
 
@@ -38,6 +40,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$this->view->assign('sections', $sections);
 		$this->view->assign('summary', $this->getSummary($sections));
 		$this->view->assign('generatedAt', date('c'));
+		$this->view->assign('endpoint', $this->buildEndpoint());
 		$this->view->assign('translations', $this->translations);
 
 		return $this->view->loadTemplate();
@@ -335,6 +338,13 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		}
 
 		return $bytes . ' B';
+	}
+
+	private function buildEndpoint(): string {
+		return $this->linkTargetService->getLink([
+			'name' => self::getName(),
+			'out' => 'html',
+		]);
 	}
 
 	private function loadTranslations(): void {
