@@ -62,6 +62,9 @@ class Base3IliasSettings implements IBase3IliasSettings {
 					], [
 						'name' => 'jobsadmindisplay',
 						'label' => 'Jobs'
+					], [
+						'name' => 'databaseworkbenchdisplay',
+						'label' => 'Database workbench'
 					]
 				]
 			]
