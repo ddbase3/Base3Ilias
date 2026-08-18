@@ -92,7 +92,7 @@ class Base3IliasPlugin implements IPlugin {
 			)
 			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
-			->set(IBase3IliasSettings::class, fn() => new Base3IliasSettings(), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(IBase3IliasSettings::class, fn($c) => new Base3IliasSettings($c->get(ITranslation::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IConfigValueResolver::class, fn($c) => new ConfigValueResolver($c->get(IClassMap::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker($c->get(IClassMap::class), $c->get(IConfiguration::class))
