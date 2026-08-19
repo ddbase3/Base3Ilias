@@ -6,6 +6,7 @@ use ILIAS\Component\Component;
 use ILIAS\Component\Resource\PublicAsset;
 use ILIAS\Component\Resource\Endpoint;
 use Base3\Base3Ilias\Base3IliasPublicAsset;
+use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
 use RuntimeException;
 
 class Base3Ilias implements Component {
@@ -30,6 +31,21 @@ class Base3Ilias implements Component {
 		$this->out();
 
 		$this->clearArtifactsOnCliInit();
+
+		if (interface_exists(\ILIAS\Component\Activities\Repository::class)) {
+			$internal[Base3IliasActivityRepositoryBridge::class] = static fn() =>
+				new Base3IliasActivityRepositoryBridge(
+					$use[\ILIAS\Component\Activities\Repository::class]
+				);
+
+			// Reader probes must only record the dependency. At runtime publish a
+			// lazy resolver, without resolving the repository during component init.
+			if ($internal instanceof \Pimple\Container) {
+				Base3IliasActivityRepositoryBridge::publishResolver(
+					static fn() => $internal[Base3IliasActivityRepositoryBridge::class]
+				);
+			}
+		}
 
 		// deprecated
 		$endpoint = 'base3.php';
