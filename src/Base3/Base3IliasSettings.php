@@ -2,6 +2,7 @@
 
 namespace Base3Ilias\Base3;
 
+use Base3\Translation\Api\ITranslation;
 use Base3Ilias\Api\IBase3IliasSettings;
 
 /**
@@ -11,63 +12,71 @@ use Base3Ilias\Api\IBase3IliasSettings;
  */
 class Base3IliasSettings implements IBase3IliasSettings {
 
+	public function __construct(
+		private readonly ITranslation $translation
+	) {}
+
 	public function getAdministrationConfig(): array {
 		return [
 			[
 				'name' => 'system',
-				'label' => 'System',
+				'label' => $this->t('base3_admin_tab_system', 'System'),
 				'displays' => [
 					[
 						'name' => 'iliasdashboarddisplay',
-						'label' => 'Dashboard'
+						'label' => $this->t('base3_admin_subtab_iliasdashboarddisplay', 'Dashboard')
 					], [
 						'name' => 'iliasconfigadmindisplay',
-						'label' => 'ILIAS Config'
+						'label' => $this->t('base3_admin_subtab_iliasconfigadmindisplay', 'ILIAS Config')
 					], [
 						'name' => 'iliaslogadmindisplay',
-						'label' => 'ILIAS Log'
+						'label' => $this->t('base3_admin_subtab_iliaslogadmindisplay', 'ILIAS Log')
 					], [
 						'name' => 'iliaserrorlogadmindisplay',
-						'label' => 'ILIAS Errors'
+						'label' => $this->t('base3_admin_subtab_iliaserrorlogadmindisplay', 'ILIAS Errors')
 					], [
 						'name' => 'iliassystemhealthdisplay',
-						'label' => 'ILIAS Health'
+						'label' => $this->t('base3_admin_subtab_iliassystemhealthdisplay', 'ILIAS Health')
 					], [
 						'name' => 'iliasrequestdebugdisplay',
-						'label' => 'ILIAS Request'
+						'label' => $this->t('base3_admin_subtab_iliasrequestdebugdisplay', 'ILIAS Request')
 					], [
 						'name' => 'iliasuserdebugdisplay',
-						'label' => 'ILIAS User'
+						'label' => $this->t('base3_admin_subtab_iliasuserdebugdisplay', 'ILIAS User')
 					], [
 						'name' => 'iliaspermissiondebugdisplay',
-						'label' => 'ILIAS Permission'
+						'label' => $this->t('base3_admin_subtab_iliaspermissiondebugdisplay', 'ILIAS Permissions')
 					], [
 						'name' => 'iliasobjectdebugdisplay',
-						'label' => 'ILIAS Objects'
+						'label' => $this->t('base3_admin_subtab_iliasobjectdebugdisplay', 'ILIAS Objects')
 					], [
 						'name' => 'logadmindisplay',
-						'label' => 'BASE3 Log'
+						'label' => $this->t('base3_admin_subtab_logadmindisplay', 'BASE3 Log')
 					], [
 						'name' => 'servicesadmindisplay',
-						'label' => 'Services'
+						'label' => $this->t('base3_admin_subtab_servicesadmindisplay', 'Services')
 					], [
 						'name' => 'configurationadmindisplay',
-						'label' => 'Configuration'
+						'label' => $this->t('base3_admin_subtab_configurationadmindisplay', 'Configuration')
 					], [
 						'name' => 'usermanagerdebugdisplay',
-						'label' => 'User Manager'
+						'label' => $this->t('base3_admin_subtab_usermanagerdebugdisplay', 'User Manager')
 					], [
 						'name' => 'statestoreadmindisplay',
-						'label' => 'State Store'
+						'label' => $this->t('base3_admin_subtab_statestoreadmindisplay', 'State Store')
 					], [
 						'name' => 'jobsadmindisplay',
-						'label' => 'Jobs'
+						'label' => $this->t('base3_admin_subtab_jobsadmindisplay', 'Jobs')
 					], [
 						'name' => 'databaseworkbenchdisplay',
-						'label' => 'Database workbench'
+						'label' => $this->t('base3_admin_subtab_databaseworkbenchdisplay', 'Database workbench')
 					]
 				]
 			]
 		];
+	}
+
+	private function t(string $key, string $fallback): string {
+		return $this->translation->translate('Administration', 'administration', $key, $fallback);
 	}
 }
