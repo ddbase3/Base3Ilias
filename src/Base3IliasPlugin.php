@@ -40,6 +40,7 @@ use Base3Ilias\Base3\Base3IliasSettings;
 use Base3Ilias\Base3\Base3IliasStateStore;
 use Base3Ilias\Base3\Base3IliasTranslation;
 use Base3Ilias\Base3\Base3IliasUsermanager;
+use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
 use Pimple\Container;
 use ReflectionClass;
 use UiFoundation\Api\IRichTextEditorDisplay;
@@ -97,6 +98,20 @@ class Base3IliasPlugin implements IPlugin {
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker($c->get(IClassMap::class), $c->get(IConfiguration::class))
 			]);
+
+		if (interface_exists(\ILIAS\Component\Activities\Repository::class)) {
+			if (!Base3IliasActivityRepositoryBridge::hasResolver()) {
+				throw new \RuntimeException(
+					'ILIAS 11 Activities Repository is available, but Base3Ilias did not receive the component repository resolver.'
+				);
+			}
+
+			$this->container->set(
+				\ILIAS\Component\Activities\Repository::class,
+				fn() => Base3IliasActivityRepositoryBridge::current()->getRepository(),
+				IContainer::SHARED
+			);
+		}
 	}
 
 	// Private methods
