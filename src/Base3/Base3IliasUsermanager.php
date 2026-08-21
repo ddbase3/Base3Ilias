@@ -14,8 +14,6 @@ use ilRbacReview;
 
 class Base3IliasUsermanager implements IUsermanager, ICheck {
 
-	private const ILIAS_ADMIN_ROLE_NAME = 'global_admin';
-
 	private $servicelocator;
 	private $accesscontrol;
 	private $ilAuthSession;
@@ -325,25 +323,25 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	private function isAnonymousUser(int $userId): bool {
-		return $userId === 13;
+		$anonymousUserId = defined('ANONYMOUS_USER_ID') ? (int)ANONYMOUS_USER_ID : 13;
+		return $userId === $anonymousUserId;
 	}
 
 	private function isAdministrator(int $userId): bool {
-		if ($userId <= 0 || $this->isAnonymousUser($userId) || $this->rbacreview == null) {
+		if (
+			$userId <= 0
+			|| $this->isAnonymousUser($userId)
+			|| $this->rbacreview == null
+			|| !defined('SYSTEM_ROLE_ID')
+		) {
 			return false;
 		}
 
-		$globalRoleIds = array_map('intval', $this->rbacreview->assignedGlobalRoles($userId));
-
-		foreach ($globalRoleIds as $roleId) {
-			$title = (string)ilObject::_lookupTitle($roleId);
-
-			if ($this->normalizeRoleName($title) === self::ILIAS_ADMIN_ROLE_NAME) {
-				return true;
-			}
-		}
-
-		return false;
+		return in_array(
+			(int)SYSTEM_ROLE_ID,
+			array_map('intval', $this->rbacreview->assignedRoles($userId)),
+			true
+		);
 	}
 
 	private function getCompatibilityRoleName(int $userId): string {
@@ -358,7 +356,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 			'id' => 'base3:admin',
 			'name' => 'admin',
 			'label' => 'Administrator',
-			'info' => 'Derived from the global ILIAS role global_admin.',
+			'info' => 'Derived from the native ILIAS system administrator role.',
 			'archive' => 0,
 			'permissions' => $this->getAdministratorPermissions()
 		));
@@ -370,7 +368,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 				'scope' => 'system',
 				'permission' => 'admin',
 				'label' => 'System administration',
-				'info' => 'Derived from the global ILIAS role global_admin.',
+				'info' => 'Derived from the native ILIAS system administrator role.',
 				'archive' => 0
 			)),
 			Permission::fromArray(array(
@@ -428,6 +426,8 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	private function canAccessIliasRefId(int $userId, int $refId, string $operation): bool {
 		$operation = strtolower(trim($operation));
 		if ($userId <= 0 || $refId <= 0 || $operation === '') return false;
+
+		if ($this->isAdministrator($userId)) return true;
 
 		if ($this->rbacsystem != null && $userId === $this->getCurrentUserId()) {
 			return (bool)$this->rbacsystem->checkAccess($operation, $refId);
