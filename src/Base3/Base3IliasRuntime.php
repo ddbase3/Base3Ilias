@@ -53,6 +53,10 @@ class Base3IliasRuntime {
 		$systemService = new Base3IliasSystemService();
 		if ($bootIliasIfNeeded && !self::isIliasBooted()) {
 			self::initIlias($systemService);
+
+			if (self::$booted) {
+				return self::getServiceLocator();
+			}
 		}
 
 		if (!self::isIliasBooted()) {
