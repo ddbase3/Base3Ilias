@@ -71,7 +71,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IConfiguration::class, fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new Base3IliasStateStore($c->get(IDatabase::class)), IContainer::SHARED)
-			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ])
+			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ], IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(ISession::class, fn() => new Base3IliasSession(), IContainer::SHARED)
 			->set('session', ISession::class, IContainer::ALIAS)
 			->set(IAccesscontrol::class, fn($c) => new SelectedAccesscontrol($c->get('authentications')), IContainer::SHARED)
