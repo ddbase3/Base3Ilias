@@ -65,3 +65,8 @@ GitHub: [@ddbase3](https://github.com/ddbase3)
 ---
 
 Feel free to contribute or report issues via GitHub!
+
+## Documentation
+
+- [Frequently Asked Questions](docs/faq.md)
+- [Privacy and data processing](PRIVACY.md)
