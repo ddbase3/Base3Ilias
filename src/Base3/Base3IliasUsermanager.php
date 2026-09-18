@@ -18,6 +18,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 
 	public const GROUP_ANONYMOUS = 'anonymous';
 	public const GROUP_AUTHENTICATED = 'authenticated';
+	public const GROUP_ADMINISTRATION = 'administration';
 	public const GROUP_DEVELOPMENT = 'development';
 	public const GROUP_TESTING = 'testing';
 	public const GROUP_PRESENTATION = 'presentation';
@@ -32,6 +33,7 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	private const GROUP_DEFINITIONS = [
 		self::GROUP_ANONYMOUS => 'Unauthenticated ILIAS users.',
 		self::GROUP_AUTHENTICATED => 'Authenticated ILIAS users.',
+		self::GROUP_ADMINISTRATION => 'Users assigned to BASE3 administration features.',
 		self::GROUP_DEVELOPMENT => 'Users assigned to BASE3 development features.',
 		self::GROUP_TESTING => 'Users assigned to BASE3 testing features.',
 		self::GROUP_PRESENTATION => 'Users assigned to BASE3 presentation features.',
