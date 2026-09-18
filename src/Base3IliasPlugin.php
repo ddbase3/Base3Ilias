@@ -23,6 +23,8 @@ use Base3\Language\Api\ILanguage;
 use Base3\Middleware\Session\SessionMiddleware;
 use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
 use Base3\Session\Api\ISession;
+use Base3\Settings\Api\ISettingsStore;
+use Base3\Settings\Database\DatabaseSettingsStore;
 use Base3\State\Api\IStateStore;
 use Base3\Translation\Api\ITranslation;
 use Base3\Usermanager\Api\IUsermanager;
@@ -71,6 +73,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IConfiguration::class, fn($c) => new Base3IliasConfiguration($c->get(IDatabase::class)), IContainer::SHARED)
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new Base3IliasStateStore($c->get(IDatabase::class)), IContainer::SHARED)
+			->set(ISettingsStore::class, fn($c) => new DatabaseSettingsStore($c->get(IDatabase::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ], IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(ISession::class, fn() => new Base3IliasSession(), IContainer::SHARED)
 			->set('session', ISession::class, IContainer::ALIAS)
@@ -80,7 +83,7 @@ class Base3IliasPlugin implements IPlugin {
 				new SessionMiddleware($c->get(ISession::class)),
 				new AccesscontrolMiddleware($c->get(IAccesscontrol::class))
 			])
-			->set(IUsermanager::class, fn() => new Base3IliasUsermanager(), IContainer::SHARED)
+			->set(IUsermanager::class, fn($c) => new Base3IliasUsermanager($c->get(ISettingsStore::class)), IContainer::SHARED)
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
 			->set(ILanguage::class, fn() => new Base3IliasLanguage(), IContainer::SHARED)
 			->set(ITranslation::class, fn($c) => new Base3IliasTranslation($c->get(ILanguage::class)), IContainer::SHARED | IContainer::NOOVERWRITE)

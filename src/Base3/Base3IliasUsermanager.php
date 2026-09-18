@@ -4,7 +4,9 @@ namespace Base3Ilias\Base3;
 
 use Base3\Api\ICheck;
 use Base3\Core\ServiceLocator;
+use Base3\Settings\Api\ISettingsStore;
 use Base3\Usermanager\Api\IUsermanager;
+use Base3\Usermanager\Group;
 use Base3\Usermanager\Permission;
 use Base3\Usermanager\Role;
 use Base3\Usermanager\User;
@@ -13,6 +15,32 @@ use ilObjUser;
 use ilRbacReview;
 
 class Base3IliasUsermanager implements IUsermanager, ICheck {
+
+	public const GROUP_ANONYMOUS = 'anonymous';
+	public const GROUP_AUTHENTICATED = 'authenticated';
+	public const GROUP_DEVELOPMENT = 'development';
+	public const GROUP_TESTING = 'testing';
+	public const GROUP_PRESENTATION = 'presentation';
+
+	public const SETTINGS_GROUP = 'base3ilias';
+	public const SETTINGS_NAME = 'groups';
+
+	/**
+	 * Stable BASE3 groups exposed by the ILIAS adapter.
+	 * Add new application groups here; getAllGroups() exposes them to the UI.
+	 */
+	private const GROUP_DEFINITIONS = [
+		self::GROUP_ANONYMOUS => 'Unauthenticated ILIAS users.',
+		self::GROUP_AUTHENTICATED => 'Authenticated ILIAS users.',
+		self::GROUP_DEVELOPMENT => 'Users assigned to BASE3 development features.',
+		self::GROUP_TESTING => 'Users assigned to BASE3 testing features.',
+		self::GROUP_PRESENTATION => 'Users assigned to BASE3 presentation features.',
+	];
+
+	private const AUTOMATIC_GROUPS = [
+		self::GROUP_ANONYMOUS,
+		self::GROUP_AUTHENTICATED,
+	];
 
 	private $servicelocator;
 	private $accesscontrol;
@@ -27,7 +55,9 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	private $permissions;
 	private $allPermissions;
 
-	public function __construct() {
+	public function __construct(
+		private readonly ISettingsStore $settingsStore
+	) {
 		$this->servicelocator = ServiceLocator::getInstance();
 		$this->accesscontrol = $this->servicelocator->get('accesscontrol');
 		$this->ilAuthSession = $this->servicelocator->get('ilAuthSession');
@@ -81,9 +111,36 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	public function getGroups() {
 		if ($this->groups !== null) return $this->groups;
 
-		// ILIAS group membership is not part of the BASE3 usermanager contract yet.
-		// ILIAS object permissions are exposed through roles and object operations.
-		$this->groups = array();
+		$userId = $this->getCurrentUserId();
+		if ($userId <= 0 || $this->isAnonymousUser($userId)) {
+			$this->groups = array($this->createGroup(self::GROUP_ANONYMOUS));
+			return $this->groups;
+		}
+
+		$this->groups = array($this->createGroup(self::GROUP_AUTHENTICATED));
+		$settings = $this->getGroupSettings();
+		$assignments = is_array($settings['assignments'] ?? null) ? $settings['assignments'] : array();
+		$roleIds = $this->getRoleIdsForUserId($userId);
+		$matched = false;
+
+		foreach ($this->getConfigurableGroupNames() as $groupName) {
+			$assignment = is_array($assignments[$groupName] ?? null) ? $assignments[$groupName] : array();
+			$userIds = $this->normalizePositiveIds($assignment['user_ids'] ?? array());
+			$assignedRoleIds = $this->normalizePositiveIds($assignment['role_ids'] ?? array());
+
+			if (in_array($userId, $userIds, true) || array_intersect($roleIds, $assignedRoleIds) !== array()) {
+				$this->groups[] = $this->createGroup($groupName);
+				$matched = true;
+			}
+		}
+
+		if (!$matched) {
+			$defaultGroup = trim((string)($settings['default_group'] ?? ''));
+			if (in_array($defaultGroup, $this->getConfigurableGroupNames(), true)) {
+				$this->groups[] = $this->createGroup($defaultGroup);
+			}
+		}
+
 		return $this->groups;
 	}
 
@@ -175,7 +232,13 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	public function getAllGroups() {
-		return array();
+		$groups = array();
+
+		foreach (array_keys(self::GROUP_DEFINITIONS) as $groupName) {
+			$groups[] = $this->createGroup($groupName);
+		}
+
+		return $groups;
 	}
 
 	public function getAllRoles() {
@@ -243,6 +306,47 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 	}
 
 	// Private methods
+
+	private function createGroup(string $groupName): Group {
+		return Group::fromArray(array(
+			'id' => $groupName,
+			'name' => $groupName,
+			'info' => self::GROUP_DEFINITIONS[$groupName] ?? '',
+			'archive' => 0,
+			'roles' => array()
+		));
+	}
+
+	private function getConfigurableGroupNames(): array {
+		return array_values(array_diff(array_keys(self::GROUP_DEFINITIONS), self::AUTOMATIC_GROUPS));
+	}
+
+	private function getGroupSettings(): array {
+		return $this->settingsStore->get(self::SETTINGS_GROUP, self::SETTINGS_NAME, array());
+	}
+
+	private function getRoleIdsForUserId(int $userId): array {
+		if ($userId <= 0 || $this->isAnonymousUser($userId) || $this->rbacreview == null) {
+			return array();
+		}
+
+		return $this->normalizePositiveIds($this->rbacreview->assignedRoles($userId));
+	}
+
+	private function normalizePositiveIds(mixed $ids): array {
+		if (!is_array($ids)) return array();
+
+		$out = array();
+		foreach ($ids as $id) {
+			if (!is_numeric($id) || (int)$id <= 0) continue;
+			$out[] = (int)$id;
+		}
+
+		$out = array_values(array_unique($out));
+		sort($out);
+
+		return $out;
+	}
 
 	private function normalizeUserId(int|string $id): ?int {
 		if (!is_numeric($id) || (int)$id <= 0) return null;

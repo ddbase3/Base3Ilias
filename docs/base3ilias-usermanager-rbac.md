@@ -11,10 +11,14 @@ Base3\Usermanager\Api\IUsermanager
 Base3\Api\ICheck
 ```
 
-It keeps the existing no-argument constructor so the current Base3Ilias service registration remains unchanged:
+The adapter receives the existing BASE3 `ISettingsStore` implementation used by the ILIAS integration:
 
 ```php
-->set(IUsermanager::class, fn() => new Base3IliasUsermanager(), IContainer::SHARED)
+->set(
+    IUsermanager::class,
+    fn($c) => new Base3IliasUsermanager($c->get(ISettingsStore::class)),
+    IContainer::SHARED
+)
 ```
 
 ## User lookup
@@ -189,9 +193,59 @@ The compatibility field `User::$role` is set to `admin` for the same user.
 
 ## Groups
 
-`getGroups()` and `getAllGroups()` return an empty array.
+BASE3 groups are stable application groups. They are deliberately not derived from ILIAS role titles.
 
-ILIAS repository groups are not mapped to BASE3 groups by this adapter.
+The adapter currently defines these groups in code:
+
+```text
+anonymous
+authenticated
+development
+testing
+presentation
+```
+
+`getAllGroups()` always returns this complete definition set. For these integration groups, `Group::$id` and `Group::$name` both use the stable group identifier. Adding a new stable BASE3 group therefore means adding it to the adapter definition. The administration UI then exposes the new group automatically.
+
+`anonymous` and `authenticated` are assigned automatically from the ILIAS login state. They are not configurable.
+
+The other groups can be mapped in the BASE3 administration UI to:
+
+```text
+one or more global ILIAS role IDs
+one or more ILIAS user IDs
+```
+
+A user is assigned to a configurable BASE3 group when either the user ID matches or at least one configured role ID is among the user's effective ILIAS roles. Multiple groups may match at the same time.
+
+The UI can additionally configure one default group. It is assigned to an authenticated user only when none of the explicit role or user mappings matched.
+
+The mapping is stored in `ISettingsStore` as:
+
+```text
+group  base3ilias
+name   groups
+```
+
+Conceptually:
+
+```php
+[
+    'assignments' => [
+        'development' => [
+            'role_ids' => [123],
+            'user_ids' => [42]
+        ],
+        'testing' => [
+            'role_ids' => [456],
+            'user_ids' => []
+        ]
+    ],
+    'default_group' => 'presentation'
+]
+```
+
+Only the assignment is configuration. The group identifiers themselves remain defined in code.
 
 ## User and RBAC mutations
 
@@ -212,7 +266,9 @@ The adapter is a read-side bridge. ILIAS user and RBAC administration remains in
 
 ## Dependencies
 
-The adapter resolves these services from the shared BASE3 service locator:
+The adapter receives `ISettingsStore` through constructor injection.
+
+It resolves these host services from the shared BASE3 service locator:
 
 ```text
 accesscontrol
