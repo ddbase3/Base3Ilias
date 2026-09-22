@@ -7,6 +7,7 @@ use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
 use Base3\Api\IPlugin;
+use Base3\Api\ISystemService;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\ConfigValue\Api\IConfigValueResolver;
 use Base3\ConfigValue\Resolver\ConfigValueResolver;
@@ -95,7 +96,7 @@ class Base3IliasPlugin implements IPlugin {
 				IContainer::SHARED
 			)
 			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
-			->set(IAssetResolver::class, fn() => new Base3IliasAssetResolver(), IContainer::SHARED)
+			->set(IAssetResolver::class, fn($c) => new Base3IliasAssetResolver($c->get(ISystemService::class)), IContainer::SHARED)
 			->set(IBase3IliasSettings::class, fn($c) => new Base3IliasSettings($c->get(ITranslation::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IConfigValueResolver::class, fn($c) => new ConfigValueResolver($c->get(IClassMap::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [

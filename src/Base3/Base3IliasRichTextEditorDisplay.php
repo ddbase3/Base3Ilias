@@ -40,7 +40,7 @@ class Base3IliasRichTextEditorDisplay implements IRichTextEditorDisplay {
 		$className = trim('base3-rich-text-editor base3-ilias-rich-text-editor-source ' . $additionalClass);
 		$rows = $this->readInt('rows', 12, 2, 1000);
 
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
 		$this->view->setTemplate('Base3/Base3IliasRichTextEditorDisplay.php');
 		$this->view->assign('id', $id);
 		$this->view->assign('name', $name);

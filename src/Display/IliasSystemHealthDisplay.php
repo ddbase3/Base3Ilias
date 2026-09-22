@@ -62,7 +62,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		$errorPath = $this->read('log', 'error_path');
 
 		$componentPath = rtrim(\DIR_COMPONENTS, '/\\');
-		$base3IliasPath = $this->joinPath(\DIR_COMPONENTS, 'Base3/Base3Ilias');
+		$base3IliasPath = $this->joinPath(\DIR_BASE3, 'Base3Ilias');
 		$base3IliasTemplatePath = $this->joinPath($base3IliasPath, 'tpl/Display');
 
 		return [
@@ -92,7 +92,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 				'description' => $this->t('section_component_paths_description', 'Paths of the BASE3 ILIAS integration.'),
 				'rows' => [
 					$this->checkDirectory($this->t('components_directory', 'Components directory'), 'DIR_COMPONENTS', $componentPath, true, true, false),
-					$this->checkDirectory($this->t('base3ilias_component_directory', 'Base3Ilias component directory'), 'DIR_COMPONENTS + Base3/Base3Ilias', $base3IliasPath, true, true, false),
+					$this->checkDirectory($this->t('base3ilias_component_directory', 'Base3Ilias component directory'), 'DIR_BASE3 + Base3Ilias', $base3IliasPath, true, true, false),
 					$this->checkDirectory($this->t('base3ilias_template_directory', 'Base3Ilias template directory'), 'Base3Ilias/tpl/Display', $base3IliasTemplatePath, true, true, false),
 				],
 			],
@@ -348,7 +348,7 @@ final class IliasSystemHealthDisplay implements IDisplay {
 	}
 
 	private function loadTranslations(): void {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
 		$this->view->loadBricks('Display');
 
 		$common = $this->view->getBricks('base3ilias_common');

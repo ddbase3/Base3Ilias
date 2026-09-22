@@ -2,6 +2,7 @@
 
 namespace Base3\Base3Ilias\PageComponent;
 
+use Base3\Api\IAssetResolver;
 use Base3\Api\IClassMap;
 use ilCtrl;
 use ilGlobalTemplateInterface;
@@ -171,7 +172,8 @@ abstract class AbstractPageComponentPluginGUI extends ilPageComponentPluginGUI {
 		$html .= '<div style="font-size: 1.1em; font-weight: bold; color: #333;">' . $this->getPageComponentName() . '</div>';
 		$html .= '<div style="font-size: 0.9em; color: #666;"><i>' . $this->getPageComponentDesc() . '</i></div>';
 		$html .= '</div>';
-		$html .= '<img src="components/Base3/Base3Ilias/logo.svg" style="width:48px; height:auto; margin-left: 16px;" />';
+		$logo = $this->dic[IAssetResolver::class]->resolve('plugin/Base3Ilias/assets/logo.svg');
+		$html .= '<img src="' . htmlspecialchars($logo, ENT_QUOTES, 'UTF-8') . '" style="width:48px; height:auto; margin-left: 16px;" />';
 		$html .= '</div>';
 		return $html;
 	}

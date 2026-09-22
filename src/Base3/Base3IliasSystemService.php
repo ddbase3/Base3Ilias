@@ -11,13 +11,18 @@ final class Base3IliasSystemService implements ISystemService {
 	}
 
 	public function getHostSystemVersion() : string {
-		if (defined('ILIAS_VERSION_NUMERIC')) return ILIAS_VERSION_NUMERIC;
+		if (defined('ILIAS_VERSION_NUMERIC')) {
+			return trim((string) ILIAS_VERSION_NUMERIC);
+		}
 
-		$versionFile = DIR_ILIAS . '/ilias_version.php';
-		if (!file_exists($versionFile)) return '';
+		$versionFile = rtrim(DIR_ILIAS, '/\\') . DIRECTORY_SEPARATOR . 'ilias_version.php';
+		if (!is_file($versionFile)) return '';
 
-		include $versionFile;
-		return ILIAS_VERSION_NUMERIC;
+		require_once $versionFile;
+
+		return defined('ILIAS_VERSION_NUMERIC')
+			? trim((string) ILIAS_VERSION_NUMERIC)
+			: '';
 	}
 
 	public function getEmbeddedSystemName() : string {
@@ -25,10 +30,10 @@ final class Base3IliasSystemService implements ISystemService {
 	}
 
 	public function getEmbeddedSystemVersion() : string {
-		$versionFile = DIR_FRAMEWORK . '/VERSION';
-		if (!file_exists($versionFile)) return '';
+		$versionFile = rtrim(DIR_FRAMEWORK, '/\\') . DIRECTORY_SEPARATOR . 'VERSION';
+		if (!is_file($versionFile) || !is_readable($versionFile)) return '';
 
 		$version = file_get_contents($versionFile);
-		return trim($version);
+		return is_string($version) ? trim($version) : '';
 	}
 }

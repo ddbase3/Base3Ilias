@@ -10,6 +10,8 @@ class Base3IliasClassMap extends PluginClassMap {
 	protected function getScanTargets(): array {
 		$targets = parent::getScanTargets();
 
+		if (!is_dir(DIR_COMPONENTS)) return $targets;
+
 		$vendors = $this->getEntries(DIR_COMPONENTS);
 		foreach ($vendors as $vendor) {
 
