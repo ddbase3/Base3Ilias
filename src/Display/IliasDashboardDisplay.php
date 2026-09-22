@@ -75,7 +75,7 @@ final class IliasDashboardDisplay implements IDisplay {
 			$this->checkDirectory($this->t('check_log_directory', 'Log directory'), $logPath, true, true),
 			$this->checkFile($this->t('check_ilias_log', 'ILIAS log'), $logFile, true, true),
 			$this->checkDirectory($this->t('check_error_log_directory', 'Error log directory'), $errorPath, true, true),
-			$this->checkDirectory($this->t('check_base3ilias', 'Base3Ilias'), $this->joinPath(\DIR_COMPONENTS, 'Base3/Base3Ilias'), true, false),
+			$this->checkDirectory($this->t('check_base3ilias', 'Base3Ilias'), $this->joinPath(\DIR_BASE3, 'Base3Ilias'), true, false),
 		];
 	}
 
@@ -627,7 +627,7 @@ final class IliasDashboardDisplay implements IDisplay {
 	}
 
 	private function loadTranslations(): void {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
 		$this->view->loadBricks('Display');
 
 		$common = $this->view->getBricks('base3ilias_common');

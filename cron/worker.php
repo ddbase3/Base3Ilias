@@ -1,13 +1,17 @@
 <?php declare(strict_types=1);
 
-$publicPath = realpath(__DIR__ . '/../../../../public');
+$entryPath = realpath(__DIR__ . '/../../../../public');
 
-if ($publicPath === false) {
-	fwrite(STDERR, "Could not resolve public path.\n");
+if ($entryPath === false || !is_file($entryPath . '/ilias.php')) {
+	$entryPath = realpath(__DIR__ . '/../../../../../../../../../../');
+}
+
+if ($entryPath === false || !is_file($entryPath . '/ilias.php')) {
+	fwrite(STDERR, "Could not resolve ILIAS entry path.\n");
 	exit(1);
 }
 
-chdir($publicPath);
+chdir($entryPath);
 
 $query = [
 	'baseClass' => 'ilUIPluginRouterGUI',
@@ -26,10 +30,10 @@ $_SERVER['REQUEST_METHOD'] = 'GET';
 $_SERVER['QUERY_STRING'] = $queryString;
 $_SERVER['REQUEST_URI'] = '/ilias.php?' . $queryString;
 
-$_SERVER['SCRIPT_FILENAME'] = $publicPath . '/ilias.php';
+$_SERVER['SCRIPT_FILENAME'] = $entryPath . '/ilias.php';
 $_SERVER['SCRIPT_NAME'] = '/ilias.php';
 $_SERVER['PHP_SELF'] = '/ilias.php';
-$_SERVER['DOCUMENT_ROOT'] = $publicPath;
+$_SERVER['DOCUMENT_ROOT'] = $entryPath;
 
 $_SERVER['HTTP_HOST'] = 'localhost';
 $_SERVER['SERVER_NAME'] = 'localhost';
@@ -43,4 +47,4 @@ $_SERVER['REQUEST_SCHEME'] = 'https';
 $_SERVER['HTTP_USER_AGENT'] = 'base3-worker-cli';
 $_SERVER['HTTP_ACCEPT'] = '*/*';
 
-require $publicPath . '/ilias.php';
+require $entryPath . '/ilias.php';

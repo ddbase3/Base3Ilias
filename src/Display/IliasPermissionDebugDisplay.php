@@ -350,7 +350,7 @@ final class IliasPermissionDebugDisplay implements IDisplay {
 	}
 
 	private function loadTranslations(): void {
-		$this->view->setPath(\DIR_COMPONENTS . 'Base3/Base3Ilias');
+		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
 		$this->view->loadBricks('Display');
 
 		$common = $this->view->getBricks('base3ilias_common');
