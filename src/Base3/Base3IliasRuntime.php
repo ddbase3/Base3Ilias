@@ -207,7 +207,13 @@ class Base3IliasRuntime {
 
 	protected static function defineDirectories(): void {
 		if (!defined('DIR_ILIAS')) {
-			define('DIR_ILIAS', self::resolveIliasRoot());
+			$defaultIliasRoot = realpath(__DIR__ . '/../../../../..');
+			if ($defaultIliasRoot !== false && is_file($defaultIliasRoot . DIRECTORY_SEPARATOR . 'ilias.ini.php')) {
+				define('DIR_ILIAS', rtrim($defaultIliasRoot, '/\\') . DIRECTORY_SEPARATOR);
+			}
+			else {
+				define('DIR_ILIAS', self::resolveIliasRoot());
+			}
 		}
 
 		$iliasConfig = [];
@@ -234,7 +240,15 @@ class Base3IliasRuntime {
 		if (!defined('DIR_DATA')) define('DIR_DATA', $dataDir);
 		if (!defined('DIR_CLIENT')) define('DIR_CLIENT', $clientDir);
 		if (!defined('DIR_COMPONENTS')) define('DIR_COMPONENTS', DIR_ILIAS . 'components/');
-		if (!defined('DIR_BASE3')) define('DIR_BASE3', self::resolveBase3Root());
+		if (!defined('DIR_BASE3')) {
+			$defaultBase3Root = DIR_COMPONENTS . 'Base3' . DIRECTORY_SEPARATOR;
+			if (is_dir($defaultBase3Root)) {
+				define('DIR_BASE3', $defaultBase3Root);
+			}
+			else {
+				define('DIR_BASE3', self::resolveBase3Root());
+			}
+		}
 		if (!defined('DIR_FRAMEWORK')) define('DIR_FRAMEWORK', DIR_BASE3 . 'Base3Framework/');
 		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src/');
 		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test/');
@@ -259,8 +273,7 @@ class Base3IliasRuntime {
 		}
 
 		while (true) {
-			if (is_file($path . DIRECTORY_SEPARATOR . 'ilias.ini.php')
-				&& is_file($path . DIRECTORY_SEPARATOR . 'ilias.php')) {
+			if (is_file($path . DIRECTORY_SEPARATOR . 'ilias.ini.php')) {
 				return rtrim($path, '/\\') . DIRECTORY_SEPARATOR;
 			}
 
