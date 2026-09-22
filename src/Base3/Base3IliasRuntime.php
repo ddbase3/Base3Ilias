@@ -207,7 +207,7 @@ class Base3IliasRuntime {
 
 	protected static function defineDirectories(): void {
 		if (!defined('DIR_ILIAS')) {
-			define('DIR_ILIAS', realpath(__DIR__ . '/../../../../..') . DIRECTORY_SEPARATOR);
+			define('DIR_ILIAS', self::resolveIliasRoot());
 		}
 
 		$iliasConfig = [];
@@ -234,7 +234,7 @@ class Base3IliasRuntime {
 		if (!defined('DIR_DATA')) define('DIR_DATA', $dataDir);
 		if (!defined('DIR_CLIENT')) define('DIR_CLIENT', $clientDir);
 		if (!defined('DIR_COMPONENTS')) define('DIR_COMPONENTS', DIR_ILIAS . 'components/');
-		if (!defined('DIR_BASE3')) define('DIR_BASE3', DIR_COMPONENTS . 'Base3/');
+		if (!defined('DIR_BASE3')) define('DIR_BASE3', self::resolveBase3Root());
 		if (!defined('DIR_FRAMEWORK')) define('DIR_FRAMEWORK', DIR_BASE3 . 'Base3Framework/');
 		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src/');
 		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test/');
@@ -250,6 +250,36 @@ class Base3IliasRuntime {
 
 		if (!defined('DIR_TMP')) define('DIR_TMP', DIR_BASE3_ARTIFACTS);
 		if (!defined('DIR_LOCAL')) define('DIR_LOCAL', DIR_BASE3_DATA);
+	}
+
+	protected static function resolveIliasRoot(): string {
+		$path = realpath(__DIR__);
+		if ($path === false) {
+			throw new RuntimeException('Base3Ilias runtime directory could not be resolved.');
+		}
+
+		while (true) {
+			if (is_file($path . DIRECTORY_SEPARATOR . 'ilias.ini.php')
+				&& is_file($path . DIRECTORY_SEPARATOR . 'ilias.php')) {
+				return rtrim($path, '/\\') . DIRECTORY_SEPARATOR;
+			}
+
+			$parent = dirname($path);
+			if ($parent === $path) break;
+
+			$path = $parent;
+		}
+
+		throw new RuntimeException('ILIAS root directory could not be resolved.');
+	}
+
+	protected static function resolveBase3Root(): string {
+		$base3IliasRoot = realpath(__DIR__ . '/../..');
+		if ($base3IliasRoot === false) {
+			throw new RuntimeException('Base3Ilias package directory could not be resolved.');
+		}
+
+		return rtrim(dirname($base3IliasRoot), '/\\') . DIRECTORY_SEPARATOR;
 	}
 
 	protected static function ensureDirectory(string $path): void {
