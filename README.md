@@ -65,7 +65,7 @@ The adapter supports three modes:
 - `collection`: one IRSS resource collection identified by an RCID, exposed as a flat file storage
 - `container`: one IRSS container resource identified by a RID, exposed with directory structure
 
-The identifier lifecycle stays with the calling domain object. Base3Ilias does not persist RID or RCID values for consumers. Collection member resources created through `write()` are managed internally by the collection storage implementation.
+The identifier lifecycle stays with the calling domain object. Base3Ilias does not persist RID or RCID values for consumers. Collection member resources created through `write()` or `copy()` are managed internally by the collection storage implementation. The adapter also implements the `IFileStorage` `copy()` and `move()` operations according to the capabilities of each IRSS mode.
 
 See [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md) for the operation mapping, ownership rules, and compatibility notes.
 

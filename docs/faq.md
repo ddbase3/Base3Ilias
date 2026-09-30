@@ -60,6 +60,8 @@ The ILIAS implementation supports `single_file`, `collection`, and `container` m
 
 The adapter uses the public IRSS service entry points used by ILIAS 10 and ILIAS 11. No direct access to `storage/fsv2` paths or IRSS database tables is used.
 
+The returned storage also supports `copy()` and `move()` for files inside the same logical storage. `collection` and `container` can copy and move between different file paths. `single_file` can move its one file by changing the current file name while keeping the RID, but it cannot create a second file path through `copy()`.
+
 ## Does Base3Ilias create a separate database connection?
 
 No. `Base3IliasDatabase` adapts the active ILIAS database service to the BASE3 `IDatabase` contract. ILIAS owns the connection lifecycle. Calling `disconnect()` on the adapter therefore does not close the shared ILIAS connection.

@@ -2,6 +2,7 @@
 
 namespace Base3Ilias\Base3;
 
+use ILIAS\Filesystem\Stream\FileStream;
 use ILIAS\Filesystem\Stream\Streams;
 use ILIAS\ResourceStorage\Identification\ResourceCollectionIdentification;
 use ILIAS\ResourceStorage\Identification\ResourceIdentification;
@@ -57,6 +58,28 @@ final class Base3IliasFileStorage implements IFileStorage {
 			self::MODE_SINGLE_FILE => $this->writeSingleFile($path, $content),
 			self::MODE_COLLECTION => $this->writeCollection($path, $content),
 			self::MODE_CONTAINER => $this->writeContainer($path, $content),
+		};
+	}
+
+	public function copy(string $source, string $target): bool {
+		$source = $this->normalizePath($source);
+		$target = $this->normalizePath($target);
+
+		return match ($this->mode) {
+			self::MODE_SINGLE_FILE => $this->copySingleFile($source, $target),
+			self::MODE_COLLECTION => $this->copyCollection($source, $target),
+			self::MODE_CONTAINER => $this->copyContainer($source, $target),
+		};
+	}
+
+	public function move(string $source, string $target): bool {
+		$source = $this->normalizePath($source);
+		$target = $this->normalizePath($target);
+
+		return match ($this->mode) {
+			self::MODE_SINGLE_FILE => $this->moveSingleFile($source, $target),
+			self::MODE_COLLECTION => $this->moveCollection($source, $target),
+			self::MODE_CONTAINER => $this->moveContainer($source, $target),
 		};
 	}
 
@@ -207,6 +230,34 @@ final class Base3IliasFileStorage implements IFileStorage {
 		return true;
 	}
 
+	private function copySingleFile(string $source, string $target): bool {
+		$source = $this->normalizeFlatFilePath($source);
+		$target = $this->normalizeFlatFilePath($target);
+
+		if ($source !== $this->singleFileName()) {
+			return false;
+		}
+
+		return $source === $target;
+	}
+
+	private function moveSingleFile(string $source, string $target): bool {
+		$source = $this->normalizeFlatFilePath($source);
+		$target = $this->normalizeFlatFilePath($target);
+
+		if ($source !== $this->singleFileName()) {
+			return false;
+		}
+		if ($source === $target) {
+			return true;
+		}
+
+		return $this->writeSingleFile(
+			$target,
+			$this->readResource($this->getResourceIdentification())
+		);
+	}
+
 	private function deleteSingleFile(string $path): bool {
 		$path = $this->normalizeFlatFilePath($path);
 		if ($path !== $this->singleFileName()) {
@@ -264,13 +315,19 @@ final class Base3IliasFileStorage implements IFileStorage {
 	}
 
 	private function writeCollection(string $path, string $content): bool {
-		$path = $this->normalizeFlatFilePath($path);
+		return $this->writeCollectionStream(
+			$this->normalizeFlatFilePath($path),
+			Streams::ofString($content)
+		);
+	}
+
+	private function writeCollectionStream(string $path, FileStream $stream): bool {
 		$identification = $this->findCollectionIdentification($path);
 
 		if ($identification instanceof ResourceIdentification) {
 			$this->resourceStorage->manage()->replaceWithStream(
 				$identification,
-				Streams::ofString($content),
+				$stream,
 				$this->stakeholder,
 				$path
 			);
@@ -278,7 +335,7 @@ final class Base3IliasFileStorage implements IFileStorage {
 		}
 
 		$newIdentification = $this->resourceStorage->manage()->stream(
-			Streams::ofString($content),
+			$stream,
 			$this->stakeholder,
 			$path
 		);
@@ -288,6 +345,36 @@ final class Base3IliasFileStorage implements IFileStorage {
 		$this->resourceStorage->collection()->store($collection);
 
 		return true;
+	}
+
+	private function copyCollection(string $source, string $target): bool {
+		$source = $this->normalizeFlatFilePath($source);
+		$target = $this->normalizeFlatFilePath($target);
+		$sourceIdentification = $this->findCollectionIdentification($source);
+
+		if (!$sourceIdentification instanceof ResourceIdentification) {
+			return false;
+		}
+		if ($source === $target) {
+			return true;
+		}
+
+		$stream = $this->resourceStorage->consume()->stream($sourceIdentification)->getStream();
+		return $this->writeCollectionStream($target, $stream);
+	}
+
+	private function moveCollection(string $source, string $target): bool {
+		$source = $this->normalizeFlatFilePath($source);
+		$target = $this->normalizeFlatFilePath($target);
+
+		if ($source === $target) {
+			return $this->findCollectionIdentification($source) instanceof ResourceIdentification;
+		}
+		if (!$this->copyCollection($source, $target)) {
+			return false;
+		}
+
+		return $this->deleteCollection($source);
 	}
 
 	private function deleteCollection(string $path): bool {
@@ -402,7 +489,66 @@ final class Base3IliasFileStorage implements IFileStorage {
 		);
 	}
 
+	private function copyContainer(string $source, string $target): bool {
+		if ($source === '' || $target === '') {
+			return false;
+		}
+
+		$entries = $this->containerEntries();
+		if (!isset($entries[$source]) || $entries[$source]['type'] !== 'file') {
+			return false;
+		}
+		if ($source === $target) {
+			return true;
+		}
+		if (isset($entries[$target]) && $entries[$target]['type'] === 'dir') {
+			return false;
+		}
+
+		$zip = $this->openContainerArchive();
+		try {
+			$content = $zip->getFromName($entries[$source]['raw_name']);
+		} finally {
+			$zip->close();
+		}
+
+		if (!is_string($content)) {
+			return false;
+		}
+
+		return $this->writeContainer($target, $content);
+	}
+
+	private function moveContainer(string $source, string $target): bool {
+		if ($source === '' || $target === '') {
+			return false;
+		}
+		if ($source === $target) {
+			$stat = $this->statContainer($source);
+			return $stat !== null && $stat['type'] === 'file';
+		}
+		if (!$this->canDeleteContainerFile($source)) {
+			return false;
+		}
+		if (!$this->copyContainer($source, $target)) {
+			return false;
+		}
+
+		return $this->deleteContainer($source);
+	}
+
 	private function deleteContainer(string $path): bool {
+		if (!$this->canDeleteContainerFile($path)) {
+			return false;
+		}
+
+		return $this->resourceStorage->manageContainer()->removePathInsideContainer(
+			$this->getResourceIdentification(),
+			$path
+		);
+	}
+
+	private function canDeleteContainerFile(string $path): bool {
 		if ($path === '') {
 			return false;
 		}
@@ -418,10 +564,7 @@ final class Base3IliasFileStorage implements IFileStorage {
 			}
 		}
 
-		return $this->resourceStorage->manageContainer()->removePathInsideContainer(
-			$this->getResourceIdentification(),
-			$path
-		);
+		return true;
 	}
 
 	private function statContainer(string $path): ?array {
