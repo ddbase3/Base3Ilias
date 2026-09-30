@@ -422,6 +422,7 @@ Base3Ilias does not define one global retention policy. Retention depends on the
 | `base3/artifacts` | Cleared during CLI component initialization |
 | `base3/cache` | No cleanup policy implemented by this component |
 | Database-backed BASE3 configuration | Persists until changed or removed by the configuration layer |
+| ILIAS IRSS resources opened through `IFileStorageFactory` | Controlled by the owning RID/RCID lifecycle and IRSS stakeholder relationships; Base3Ilias defines no global retention period |
 
 ## 25. Data minimization considerations
 
@@ -456,6 +457,7 @@ Before exposing Base3Ilias administration functions in production, verify at lea
 - file permissions for the client-specific `base3` data directory are appropriate
 - temporary artifacts are not treated as durable storage
 - the request-preservation endpoint is exposed only where required
+- RID and RCID values are only exposed to code authorized to access the corresponding ILIAS-backed storage
 
 ## 27. Relationship to ILIAS privacy controls
 
@@ -464,3 +466,21 @@ Base3Ilias relies on ILIAS as the host system for authentication, sessions, user
 Deleting or changing authoritative user data in ILIAS therefore changes what Base3Ilias can read from the host system. Base3Ilias does not implement an independent user-data deletion workflow because it does not own the primary user records.
 
 Independent BASE3 state, configuration, session values, logs or files must still be considered separately where they contain personal data.
+
+## 28. ILIAS Resource Storage adapter
+
+Base3Ilias can expose existing ILIAS Resource Storage Service areas through `ResourceFoundation\Api\IFileStorageFactory` and `IFileStorage`. The factory accepts an externally managed RID or RCID plus a storage mode and does not persist that identifier on behalf of the calling domain object.
+
+The adapter can process arbitrary uploaded or generated file content and the corresponding ILIAS resource metadata. Depending on the selected mode, this includes:
+
+- a single IRSS file resource and its current revision
+- the member resources of an IRSS resource collection
+- files and directory names contained in an IRSS container resource
+
+ILIAS remains the authoritative storage system. Base3Ilias does not derive or directly access physical `storage/fsv2` paths and does not write IRSS database tables directly. Reads and writes use the ILIAS Resource Storage Service API.
+
+For resources created by collection `write()` operations and for single-file or collection-member resources updated through the adapter, Base3Ilias uses an IRSS stakeholder named `base3ilias_file_storage`. Container mutations use the existing container resource and do not add a stakeholder through the container mutation API. The stakeholder owner defaults to the current ILIAS user when available and otherwise follows the ILIAS stakeholder fallback behavior.
+
+The adapter does not define a general retention period. The calling component remains responsible for persisting and removing its RID or RCID reference. Deleting a collection member removes it from that logical collection and asks IRSS to release the Base3Ilias stakeholder. Deleting a single-file resource removes the Base3Ilias stakeholder and only removes the physical IRSS resource when no other stakeholder keeps it in use. Container file and directory deletion changes the content of the existing container resource rather than deleting the container RID itself.
+
+File contents, file names and directory names can contain personal or confidential information. Access to a factory and to the externally managed storage identifier must therefore be restricted to code that is authorized to access the corresponding ILIAS-backed storage area.

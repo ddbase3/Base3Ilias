@@ -43,6 +43,7 @@ This component merges the capabilities of the BASE3 framework with the extensibi
 - ILIAS version >= 10.0
 - PHP >= 8.2
 - BASE3 Framework
+- ResourceFoundation
 
 ## Purpose
 
@@ -52,6 +53,21 @@ The main goal of **Base3Ilias** is to allow developers to:
 - Share core logic between ILIAS and non-ILIAS projects using BASE3
 - Speed up development and maintain consistency across services
 - Usage of already developed BASE3 Plugins like AI tools, chatbot, agent system, reporting, crm, different api connectors and more
+- Expose ILIAS Resource Storage Service resources through the ResourceFoundation file-storage contracts
+
+## ILIAS Resource Storage adapter
+
+Base3Ilias binds `ResourceFoundation\Api\IFileStorageFactory` to an ILIAS-specific factory. The factory opens an existing ILIAS Resource Storage Service area and returns it as a normal `IFileStorage`.
+
+The adapter supports three modes:
+
+- `single_file`: one IRSS resource identified by a RID
+- `collection`: one IRSS resource collection identified by an RCID, exposed as a flat file storage
+- `container`: one IRSS container resource identified by a RID, exposed with directory structure
+
+The identifier lifecycle stays with the calling domain object. Base3Ilias does not persist RID or RCID values for consumers. Collection member resources created through `write()` are managed internally by the collection storage implementation.
+
+See [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md) for the operation mapping, ownership rules, and compatibility notes.
 
 ## License
 
@@ -70,3 +86,4 @@ Feel free to contribute or report issues via GitHub!
 
 - [Frequently Asked Questions](docs/faq.md)
 - [Privacy and data processing](PRIVACY.md)
+- [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md)

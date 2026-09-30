@@ -46,10 +46,19 @@ Base3Ilias registers ILIAS-specific implementations or bridges for several BASE3
 - `ITranslation`
 - `IMvcView`
 - `IAssetResolver`
+- `IFileStorageFactory`
 - `ILinkTargetService`
 - `IMigrationRunner`
 
 It also exposes the ILIAS dependency injection container to the BASE3 service locator.
+
+## Can BASE3 plugins use the ILIAS Resource Storage Service without depending on ILIAS APIs?
+
+Yes. Base3Ilias binds `ResourceFoundation\Api\IFileStorageFactory` to `Base3IliasFileStorageFactory`. BASE3 code can request the factory through dependency injection and open an existing storage with `openStorage($id, $mode)`. The returned object implements the neutral `IFileStorage` contract.
+
+The ILIAS implementation supports `single_file`, `collection`, and `container` modes. For `single_file` and `container`, the ID is an IRSS RID. For `collection`, the ID is an RCID. RID and RCID persistence remains the responsibility of the calling domain object.
+
+The adapter uses the public IRSS service entry points used by ILIAS 10 and ILIAS 11. No direct access to `storage/fsv2` paths or IRSS database tables is used.
 
 ## Does Base3Ilias create a separate database connection?
 

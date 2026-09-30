@@ -34,6 +34,7 @@ use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
+use Base3Ilias\Base3\Base3IliasFileStorageFactory;
 use Base3Ilias\Base3\Base3IliasDatabase;
 use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
@@ -44,7 +45,9 @@ use Base3Ilias\Base3\Base3IliasStateStore;
 use Base3Ilias\Base3\Base3IliasTranslation;
 use Base3Ilias\Base3\Base3IliasUsermanager;
 use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
+use ILIAS\DI\Container as IliasContainer;
 use Pimple\Container;
+use ResourceFoundation\Api\IFileStorageFactory;
 use ReflectionClass;
 use UiFoundation\Api\IRichTextEditorDisplay;
 
@@ -75,6 +78,11 @@ class Base3IliasPlugin implements IPlugin {
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new Base3IliasStateStore($c->get(IDatabase::class)), IContainer::SHARED)
 			->set(ISettingsStore::class, fn($c) => new DatabaseSettingsStore($c->get(IDatabase::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(
+				IFileStorageFactory::class,
+				fn($c) => new Base3IliasFileStorageFactory($c->get(IliasContainer::class)),
+				IContainer::SHARED | IContainer::NOOVERWRITE
+			)
 			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ], IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(ISession::class, fn() => new Base3IliasSession(), IContainer::SHARED)
 			->set('session', ISession::class, IContainer::ALIAS)
