@@ -35,6 +35,10 @@ use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
 use Base3Ilias\Base3\Base3IliasFileStorageFactory;
+use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+use Base3Ilias\Base3\Base3IliasFileUploadService;
+use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+use Base3Ilias\Base3\Base3IliasChatbotConfigService;
 use Base3Ilias\Base3\Base3IliasDatabase;
 use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
@@ -82,6 +86,37 @@ class Base3IliasPlugin implements IPlugin {
 				IFileStorageFactory::class,
 				fn($c) => new Base3IliasFileStorageFactory($c->get(IliasContainer::class)),
 				IContainer::SHARED | IContainer::NOOVERWRITE
+			)
+			->set(
+				Base3IliasManagedFileStorageService::class,
+				fn($c) => new Base3IliasManagedFileStorageService(
+					$c->get(ISettingsStore::class),
+					$c->get(IFileStorageFactory::class),
+					$c->get(IliasContainer::class)
+				),
+				IContainer::SHARED
+			)
+			->set(
+				Base3IliasFileUploadService::class,
+				fn($c) => new Base3IliasFileUploadService($c->get(Base3IliasManagedFileStorageService::class)),
+				IContainer::SHARED
+			)
+			->set(
+				Base3IliasFileManagerHttpService::class,
+				fn($c) => new Base3IliasFileManagerHttpService(
+					$c->get(Base3IliasManagedFileStorageService::class),
+					$c->get(Base3IliasFileUploadService::class),
+					$c->get(IliasContainer::class)
+				),
+				IContainer::SHARED
+			)
+			->set(
+				Base3IliasChatbotConfigService::class,
+				fn($c) => new Base3IliasChatbotConfigService(
+					$c->get(Base3IliasFileManagerHttpService::class),
+					$c->get(IConfiguration::class)
+				),
+				IContainer::SHARED
 			)
 			->set('authentications', fn($c) => [ new Base3IliasAuth($c->get('ilAuthSession')) ], IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(ISession::class, fn() => new Base3IliasSession(), IContainer::SHARED)

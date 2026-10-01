@@ -214,3 +214,41 @@ openStorage(string $id, string $mode): IFileStorage
 ```
 
 Generic `createStorage()` semantics are not part of the contract. Storage provisioning differs substantially between IRSS resources, IRSS collections, local directories, FTP roots and other backends. Creation should only be moved into the shared foundation after multiple implementations expose the same stable lifecycle.
+
+## Managed FileManager storage
+
+Base3Ilias provides one shared lifecycle for ClientStack FileManager integrations:
+
+```text
+logical owner group + logical owner name + storage mode
+    -> Base3IliasManagedFileStorageService
+    -> managed IRSS collection or container
+    -> IFileStorage
+```
+
+`Base3IliasManagedFileStorageService` owns provisioning, persistent owner-to-storage mapping and complete removal of managed IRSS storage. Consumers must not create a second RID/RCID registry.
+
+Use `collection` for flat file sets such as chatbot resources. Use `container` when full directory management is required.
+
+`Base3IliasFileUploadService` is the single chunk-upload implementation. Temporary chunks live below:
+
+```text
+DIR_BASE3_ARTIFACTS/filemanager/<owner-hash>/<upload-id>/
+```
+
+`Base3IliasFileManagerHttpService` maps the ClientStack FileManager HTTP protocol to the managed storage and upload services. Host integrations remain responsible for authorization and for selecting their stable logical owner identity.
+
+The current ResourceFoundation storage contract used by Base3Ilias includes native `copy()` and `move()` operations. Base3Ilias maps those operations directly to the active `IFileStorage`; it does not synthesize them through `read()`, `write()` and `delete()`.
+
+### Current stream limitation
+
+The current storage body contract is still string-based:
+
+```php
+public function read(string $path): string;
+public function write(string $path, string $content): bool;
+```
+
+Chunk uploads therefore avoid large request bodies, but finalization still assembles one complete PHP string before `write()`. Downloads likewise materialize the complete body returned by `read()`.
+
+This is accepted for the current FileManager integration where files are limited to 50 MB. A future ResourceFoundation stream read/write contract should replace this final in-memory step for substantially larger files. Base3Ilias intentionally does not add a direct IRSS streaming bypass alongside `IFileStorage`.
