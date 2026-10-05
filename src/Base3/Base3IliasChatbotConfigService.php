@@ -43,6 +43,7 @@ final class Base3IliasChatbotConfigService {
 				'enabled' => true,
 				'endpoints' => Base3IliasFileManagerHttpService::buildEndpoints($fileManagerBaseUrl),
 				'max_file_size' => Base3IliasFileManagerHttpService::DEFAULT_MAX_FILE_SIZE,
+				'accept' => 'application/pdf,.pdf',
 			]
 		]);
 	}

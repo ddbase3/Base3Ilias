@@ -2,23 +2,27 @@
 
 namespace Base3Ilias\Base3;
 
+use Base3\Event\Api\IEventManager;
 use Base3\Settings\Api\ISettingsStore;
 use ILIAS\DI\Container;
 use ILIAS\Filesystem\Stream\Streams;
 use InvalidArgumentException;
 use ResourceFoundation\Api\IFileStorage;
 use ResourceFoundation\Api\IFileStorageFactory;
+use ResourceFoundation\Api\IManagedFileStorageService;
+use ResourceFoundation\Event\ManagedFileStorageDeletingEvent;
 use RuntimeException;
 use Throwable;
 
-final class Base3IliasManagedFileStorageService {
+final class Base3IliasManagedFileStorageService implements IManagedFileStorageService {
 
 	private const SETTINGS_GROUP = 'base3ilias-filemanager';
 
 	public function __construct(
 		private readonly ISettingsStore $settingsStore,
 		private readonly IFileStorageFactory $fileStorageFactory,
-		private readonly Container $iliasContainer
+		private readonly Container $iliasContainer,
+		private readonly IEventManager $eventManager
 	) {}
 
 	public function openOrCreate(string $ownerGroup, string $ownerName, string $mode): IFileStorage {
@@ -94,6 +98,12 @@ final class Base3IliasManagedFileStorageService {
 
 	public function delete(string $ownerGroup, string $ownerName, string $mode): void {
 		[$ownerGroup, $ownerName, $mode] = $this->normalizeOwner($ownerGroup, $ownerName, $mode);
+		$this->eventManager->fire(new ManagedFileStorageDeletingEvent(
+			$ownerGroup,
+			$ownerName,
+			$mode
+		));
+
 		$key = $this->settingsName($ownerGroup, $ownerName, $mode);
 		$settings = $this->settingsStore->get(self::SETTINGS_GROUP, $key, []);
 		$storageId = trim((string)($settings['storage_id'] ?? ''));

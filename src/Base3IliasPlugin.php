@@ -52,6 +52,7 @@ use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
 use ILIAS\DI\Container as IliasContainer;
 use Pimple\Container;
 use ResourceFoundation\Api\IFileStorageFactory;
+use ResourceFoundation\Api\IManagedFileStorageService;
 use ReflectionClass;
 use UiFoundation\Api\IRichTextEditorDisplay;
 
@@ -92,10 +93,12 @@ class Base3IliasPlugin implements IPlugin {
 				fn($c) => new Base3IliasManagedFileStorageService(
 					$c->get(ISettingsStore::class),
 					$c->get(IFileStorageFactory::class),
-					$c->get(IliasContainer::class)
+					$c->get(IliasContainer::class),
+					$c->get(IEventManager::class)
 				),
 				IContainer::SHARED
 			)
+			->set(IManagedFileStorageService::class, Base3IliasManagedFileStorageService::class, IContainer::ALIAS)
 			->set(
 				Base3IliasFileUploadService::class,
 				fn($c) => new Base3IliasFileUploadService($c->get(Base3IliasManagedFileStorageService::class)),
