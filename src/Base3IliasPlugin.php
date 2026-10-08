@@ -11,7 +11,6 @@ use Base3\Api\ISystemService;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\ConfigValue\Api\IConfigValueResolver;
 use Base3\ConfigValue\Resolver\ConfigValueResolver;
-use Base3\Core\MvcView;
 use Base3\Database\Api\IDatabase;
 use Base3\Event\Api\IEventManager;
 use Base3\Event\EventManager;
@@ -36,6 +35,7 @@ use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
 use Base3Ilias\Base3\Base3IliasFileStorageFactory;
 use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+use Base3Ilias\Base3\Base3IliasMvcView;
 use Base3Ilias\Base3\Base3IliasFileUploadService;
 use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
 use Base3Ilias\Base3\Base3IliasChatbotConfigService;
@@ -49,6 +49,7 @@ use Base3Ilias\Base3\Base3IliasStateStore;
 use Base3Ilias\Base3\Base3IliasTranslation;
 use Base3Ilias\Base3\Base3IliasUsermanager;
 use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
+use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use ILIAS\DI\Container as IliasContainer;
 use Pimple\Container;
 use ResourceFoundation\Api\IFileStorageFactory;
@@ -133,8 +134,14 @@ class Base3IliasPlugin implements IPlugin {
 			->set(IUsermanager::class, fn($c) => new Base3IliasUsermanager($c->get(ISettingsStore::class)), IContainer::SHARED)
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
 			->set(ILanguage::class, fn() => new Base3IliasLanguage(), IContainer::SHARED)
-			->set(ITranslation::class, fn($c) => new Base3IliasTranslation($c->get(ILanguage::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
-			->set(IMvcView::class, fn($c) => new MvcView($c->get(ILanguage::class)))
+			->set(ITranslation::class, fn($c) => new Base3IliasTranslation(
+				$c->get(ILanguage::class),
+				$c->get(Base3IliasModuleRegistry::class)
+			), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(IMvcView::class, fn($c) => new Base3IliasMvcView(
+				$c->get(ILanguage::class),
+				$c->get(Base3IliasModuleRegistry::class)
+			))
 			->set('view', IMvcView::class, IContainer::ALIAS)
 			->set(
 				IRichTextEditorDisplay::class,
@@ -142,7 +149,10 @@ class Base3IliasPlugin implements IPlugin {
 				IContainer::SHARED
 			)
 			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
-			->set(IAssetResolver::class, fn($c) => new Base3IliasAssetResolver($c->get(ISystemService::class)), IContainer::SHARED)
+			->set(IAssetResolver::class, fn($c) => new Base3IliasAssetResolver(
+				$c->get(ISystemService::class),
+				$c->get(Base3IliasModuleRegistry::class)
+			), IContainer::SHARED)
 			->set(IBase3IliasSettings::class, fn($c) => new Base3IliasSettings($c->get(ITranslation::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IConfigValueResolver::class, fn($c) => new ConfigValueResolver($c->get(IClassMap::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [

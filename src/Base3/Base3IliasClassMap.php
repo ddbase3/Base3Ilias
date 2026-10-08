@@ -2,43 +2,96 @@
 
 namespace Base3Ilias\Base3;
 
-use Base3\Api\IPlugin;
 use Base3\Core\PluginClassMap;
 
 class Base3IliasClassMap extends PluginClassMap {
 
 	protected function getScanTargets(): array {
-		$targets = parent::getScanTargets();
+		return [
+			["basedir" => DIR_SRC, "subdir" => "", "subns" => "Base3"]
+		];
+	}
 
-		if (!is_dir(DIR_COMPONENTS)) return $targets;
+	public function generate($regenerate = false): void {
+		if (!$regenerate && file_exists($this->classMapFile) && filesize($this->classMapFile) > 0) return;
 
-		$vendors = $this->getEntries(DIR_COMPONENTS);
-		foreach ($vendors as $vendor) {
+		if (!is_writable(DIR_TMP)) die('Directory /tmp has to be writable.');
 
-			// TODO check clean classes
-			if ($vendor == 'Base3') continue;
-			if ($vendor == 'ILIAS') continue;
-			// if ($vendor == 'Qualitus') continue;
+		$this->map = [];
 
-			$vendorPath = DIR_COMPONENTS . $vendor;
-			if (!is_dir($vendorPath)) continue;
+		foreach ($this->getScanTargets() as $target) {
+			$basedir = $target['basedir'];
+			$subdir = $target['subdir'] ?? '';
+			$subns = $target['subns'] ?? '';
 
-			$apps = $this->getEntries($vendorPath);
+			$apps = isset($target['app'])
+				? [$target['app']]
+				: $this->getEntries($basedir);
+
 			foreach ($apps as $app) {
-				$srcPath = $vendorPath . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'src';
-				if (!is_dir($srcPath)) continue;
+				$apppath = $basedir . DIRECTORY_SEPARATOR . $app;
+				if (!empty($subdir)) $apppath .= DIRECTORY_SEPARATOR . $subdir;
+				if (!is_dir($apppath)) continue;
 
-				// andere Vendoren: App = Vendor/App, Namespace = Vendor\App
-				$targets[] = [
-					"basedir" => DIR_COMPONENTS,
-					"app" => $vendor . '/' . $app,
-					"subdir" => "src",
-					"subns" => $vendor . "\\" . $app
-				];
+				$classes = [];
+				$this->scanClasses($classes, $basedir, $app, $subdir, $subns);
+				$this->fillClassMap($app, $classes);
 			}
 		}
-		
-		return $targets;
+
+		foreach (Base3IliasRuntime::getBase3Modules() as $name => $module) {
+			if ($name === 'Base3Framework') continue;
+
+			$srcPath = Base3IliasRuntime::resolveBase3ModulePath($module) . DIRECTORY_SEPARATOR . 'src';
+			if (!is_dir($srcPath)) continue;
+
+			$classes = [];
+			$this->scanModuleClasses($classes, $srcPath, (string) $module['namespace']);
+			$this->fillClassMap($name, $classes);
+		}
+
+		$this->writeClassMap();
+		$this->generateConstructorCache();
+	}
+
+	protected function scanModuleClasses(
+		array &$classes,
+		string $srcPath,
+		string $namespace,
+		string $path = ''
+	): void {
+		$fullPath = rtrim($srcPath, '/\\');
+		if ($path !== '') $fullPath .= DIRECTORY_SEPARATOR . $path;
+
+		foreach ($this->getEntries($fullPath) as $entry) {
+			$fullEntry = $fullPath . DIRECTORY_SEPARATOR . $entry;
+
+			if (is_dir($fullEntry)) {
+				$childPath = $path === '' ? $entry : $path . DIRECTORY_SEPARATOR . $entry;
+				$this->scanModuleClasses($classes, $srcPath, $namespace, $childPath);
+				continue;
+			}
+
+			if (substr($entry, -4) !== '.php' || substr_count($entry, '.') !== 1) continue;
+
+			require_once $fullEntry;
+
+			$namespaceParts = [trim($namespace, '\\')];
+			foreach (explode(DIRECTORY_SEPARATOR, $path) as $part) {
+				if ($part !== '') $namespaceParts[] = $part;
+			}
+
+			$className = implode('\\', $namespaceParts) . '\\' . substr($entry, 0, -4);
+			if (!class_exists($className, false)) continue;
+
+			$reflection = new \ReflectionClass($className);
+			if ($reflection->isAbstract()) continue;
+
+			$classes[] = [
+				'file' => $fullEntry,
+				'class' => $className,
+				'interfaces' => class_implements($className)
+			];
+		}
 	}
 }
-

@@ -1,12 +1,35 @@
 <?php declare(strict_types=1);
 
-$entryPath = realpath(__DIR__ . '/../../../../public');
-
-if ($entryPath === false || !is_file($entryPath . '/ilias.php')) {
-	$entryPath = realpath(__DIR__ . '/../../../../../../../../../../');
+$path = realpath(__DIR__);
+if ($path === false) {
+	fwrite(STDERR, "Could not resolve Base3Ilias worker directory.\n");
+	exit(1);
 }
 
+$iliasRoot = null;
+$current = $path;
+while (true) {
+	if (is_file($current . DIRECTORY_SEPARATOR . 'ilias.ini.php')) {
+		$iliasRoot = $current;
+		break;
+	}
+
+	$parent = dirname($current);
+	if ($parent === $current) break;
+	$current = $parent;
+}
+
+if ($iliasRoot === null) {
+	fwrite(STDERR, "Could not resolve ILIAS root directory.\n");
+	exit(1);
+}
+
+$entryPath = realpath($iliasRoot . DIRECTORY_SEPARATOR . 'public');
 if ($entryPath === false || !is_file($entryPath . '/ilias.php')) {
+	$entryPath = $iliasRoot;
+}
+
+if (!is_file($entryPath . '/ilias.php')) {
 	fwrite(STDERR, "Could not resolve ILIAS entry path.\n");
 	exit(1);
 }

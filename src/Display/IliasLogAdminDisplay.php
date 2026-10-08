@@ -243,7 +243,7 @@ final class IliasLogAdminDisplay implements IDisplay {
 	}
 
 	private function loadTranslations(): void {
-		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 
 		$common = $this->view->getBricks('base3ilias_common');

@@ -2,6 +2,7 @@
 
 namespace Base3Ilias\Base3;
 
+use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use Base3\Language\Api\ILanguage;
 use Base3\Translation\Api\ITranslation;
 
@@ -22,14 +23,11 @@ class Base3IliasTranslation implements ITranslation {
 	 */
 	protected array $translations = [];
 
-	/**
-	 * @param array<int, string>|null $componentPaths
-	 */
 	public function __construct(
 		protected readonly ILanguage $language,
-		?array $componentPaths = null
+		private readonly Base3IliasModuleRegistry $moduleRegistry
 	) {
-		$this->componentPaths = $componentPaths ?? $this->resolveComponentPaths();
+		$this->componentPaths = $this->resolveComponentPaths();
 	}
 
 	public function translate(string $set, string $section, string $key, string $fallback = '', array $replacements = []): string {
@@ -56,34 +54,18 @@ class Base3IliasTranslation implements ITranslation {
 	 * @return array<int, string>
 	 */
 	protected function resolveComponentPaths(): array {
-		if(!defined('DIR_BASE3')) {
-			return [dirname(__DIR__, 2)];
-		}
-
 		$paths = [];
-
-		$basePath = rtrim(DIR_BASE3, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'Base3Ilias';
-		if(is_dir($basePath)) {
-			$paths[] = $basePath;
+		$base3IliasPath = $this->moduleRegistry->getModulePath('Base3Ilias');
+		if($base3IliasPath !== null && is_dir($base3IliasPath . DIRECTORY_SEPARATOR . 'lang')) {
+			$paths[] = $base3IliasPath;
 		}
 
-		$componentPaths = glob(rtrim(DIR_BASE3, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*');
-
-		if(!is_array($componentPaths)) {
-			return $paths;
-		}
-
-		sort($componentPaths);
-
-		foreach($componentPaths as $componentPath) {
-			if(!is_dir($componentPath)) {
+		foreach($this->moduleRegistry->getModules() as $name => $module) {
+			if($name === 'Base3Ilias') {
 				continue;
 			}
 
-			if(basename($componentPath) === 'Base3Ilias') {
-				continue;
-			}
-
+			$componentPath = $this->moduleRegistry->resolveModulePath($module);
 			if(!is_dir($componentPath . DIRECTORY_SEPARATOR . 'lang')) {
 				continue;
 			}

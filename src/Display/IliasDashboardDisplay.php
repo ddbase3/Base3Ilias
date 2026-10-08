@@ -4,6 +4,7 @@ namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
+use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use Base3\LinkTarget\Api\ILinkTargetService;
 use ilCtrl;
 use ilIniFile;
@@ -21,7 +22,8 @@ final class IliasDashboardDisplay implements IDisplay {
 		private readonly ilObjUser $ilUser,
 		private readonly ilRbacReview $rbacreview,
 		private readonly ilCtrl $ilCtrl,
-		private readonly ILinkTargetService $linkTargetService
+		private readonly ILinkTargetService $linkTargetService,
+		private readonly Base3IliasModuleRegistry $moduleRegistry
 	) {}
 
 	public static function getName(): string {
@@ -75,7 +77,7 @@ final class IliasDashboardDisplay implements IDisplay {
 			$this->checkDirectory($this->t('check_log_directory', 'Log directory'), $logPath, true, true),
 			$this->checkFile($this->t('check_ilias_log', 'ILIAS log'), $logFile, true, true),
 			$this->checkDirectory($this->t('check_error_log_directory', 'Error log directory'), $errorPath, true, true),
-			$this->checkDirectory($this->t('check_base3ilias', 'Base3Ilias'), $this->joinPath(\DIR_BASE3, 'Base3Ilias'), true, false),
+			$this->checkDirectory($this->t('check_base3ilias', 'Base3Ilias'), $this->moduleRegistry->requireModulePath('Base3Ilias'), true, false),
 		];
 	}
 
@@ -627,7 +629,7 @@ final class IliasDashboardDisplay implements IDisplay {
 	}
 
 	private function loadTranslations(): void {
-		$this->view->setPath(\DIR_BASE3 . 'Base3Ilias');
+		$this->view->setPath(dirname(__DIR__, 2));
 		$this->view->loadBricks('Display');
 
 		$common = $this->view->getBricks('base3ilias_common');

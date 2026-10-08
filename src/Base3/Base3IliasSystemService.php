@@ -3,8 +3,13 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Api\ISystemService;
+use Base3\Base3Ilias\Base3IliasModuleRegistry;
 
 final class Base3IliasSystemService implements ISystemService {
+
+	public function __construct(
+		private readonly Base3IliasModuleRegistry $moduleRegistry
+	) {}
 
 	public function getHostSystemName() : string {
 		return 'ILIAS';
@@ -30,10 +35,10 @@ final class Base3IliasSystemService implements ISystemService {
 	}
 
 	public function getEmbeddedSystemVersion() : string {
-		$versionFile = rtrim(DIR_FRAMEWORK, '/\\') . DIRECTORY_SEPARATOR . 'VERSION';
-		if (!is_file($versionFile) || !is_readable($versionFile)) return '';
+		$framework = $this->moduleRegistry->getModule('Base3Framework');
+		if ($framework === null) return '';
 
-		$version = file_get_contents($versionFile);
+		$version = $framework['version'] ?? null;
 		return is_string($version) ? trim($version) : '';
 	}
 }

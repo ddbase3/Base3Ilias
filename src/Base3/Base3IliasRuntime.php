@@ -5,6 +5,7 @@ namespace Base3Ilias\Base3;
 use Base3\Api\IClassMap;
 use Base3\Api\IComponentResolver;
 use Base3\Api\IContainer;
+use Base3\Api\IModuleRegistry;
 use Base3\Api\IPlugin;
 use Base3\Api\IRequest;
 use Base3\Api\ISystemService;
@@ -13,6 +14,7 @@ use Base3\Core\Autoloader;
 use Base3\Core\ComponentResolver;
 use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
+use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use Base3\Hook\HookManager;
 use Base3\Hook\Api\IHookListener;
 use Base3\Hook\Api\IHookManager;
@@ -32,6 +34,7 @@ class Base3IliasRuntime {
 	protected static bool $finishDispatched = false;
 	protected static ?Base3IliasServiceLocator $serviceLocator = null;
 	protected static ?IHookManager $hookManager = null;
+	protected static ?Base3IliasModuleRegistry $moduleRegistry = null;
 
 	/**
 	 * Snapshot used by standalone public endpoints that must survive the ILIAS
@@ -50,7 +53,7 @@ class Base3IliasRuntime {
 
 		self::prepareEnvironment();
 
-		$systemService = new Base3IliasSystemService();
+		$systemService = new Base3IliasSystemService(self::getBase3ModuleRegistry());
 		if ($bootIliasIfNeeded && !self::isIliasBooted()) {
 			self::initIlias($systemService);
 
@@ -88,6 +91,8 @@ class Base3IliasRuntime {
 			->set(IContainer::class, $servicelocator, IContainer::SHARED)
 			->set('servicelocator', IContainer::class, IContainer::ALIAS)
 			->set(ISystemService::class, $systemService, IContainer::SHARED)
+			->set(Base3IliasModuleRegistry::class, self::getBase3ModuleRegistry(), IContainer::SHARED)
+			->set(IModuleRegistry::class, fn() => new Base3IliasModuleRegistryService(self::getBase3ModuleRegistry()), IContainer::SHARED)
 			->set(IRequest::class, $request, IContainer::SHARED)
 			->set(IHookManager::class, fn() => new HookManager(), ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
@@ -240,19 +245,6 @@ class Base3IliasRuntime {
 		if (!defined('DIR_DATA')) define('DIR_DATA', $dataDir);
 		if (!defined('DIR_CLIENT')) define('DIR_CLIENT', $clientDir);
 		if (!defined('DIR_COMPONENTS')) define('DIR_COMPONENTS', DIR_ILIAS . 'components/');
-		if (!defined('DIR_BASE3')) {
-			$defaultBase3Root = DIR_COMPONENTS . 'Base3' . DIRECTORY_SEPARATOR;
-			if (is_dir($defaultBase3Root)) {
-				define('DIR_BASE3', $defaultBase3Root);
-			}
-			else {
-				define('DIR_BASE3', self::resolveBase3Root());
-			}
-		}
-		if (!defined('DIR_FRAMEWORK')) define('DIR_FRAMEWORK', DIR_BASE3 . 'Base3Framework/');
-		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src/');
-		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test/');
-		if (!defined('DIR_PLUGIN')) define('DIR_PLUGIN', DIR_BASE3);
 
 		if (!defined('DIR_BASE3_DATA')) define('DIR_BASE3_DATA', DIR_CLIENT . 'base3' . DIRECTORY_SEPARATOR);
 		if (!defined('DIR_BASE3_ARTIFACTS')) define('DIR_BASE3_ARTIFACTS', DIR_BASE3_DATA . 'artifacts' . DIRECTORY_SEPARATOR);
@@ -264,6 +256,14 @@ class Base3IliasRuntime {
 
 		if (!defined('DIR_TMP')) define('DIR_TMP', DIR_BASE3_ARTIFACTS);
 		if (!defined('DIR_LOCAL')) define('DIR_LOCAL', DIR_BASE3_DATA);
+
+		$frameworkRoot = self::getBase3ModuleRegistry()->requireModulePath('Base3Framework');
+		if (!defined('DIR_FRAMEWORK')) define('DIR_FRAMEWORK', rtrim($frameworkRoot, '/\\') . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src' . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test' . DIRECTORY_SEPARATOR);
+
+		if (!defined('DIR_BASE3')) define('DIR_BASE3', DIR_COMPONENTS . 'Base3' . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_PLUGIN')) define('DIR_PLUGIN', DIR_BASE3);
 	}
 
 	protected static function resolveIliasRoot(): string {
@@ -284,15 +284,6 @@ class Base3IliasRuntime {
 		}
 
 		throw new RuntimeException('ILIAS root directory could not be resolved.');
-	}
-
-	protected static function resolveBase3Root(): string {
-		$base3IliasRoot = realpath(__DIR__ . '/../..');
-		if ($base3IliasRoot === false) {
-			throw new RuntimeException('Base3Ilias package directory could not be resolved.');
-		}
-
-		return rtrim(dirname($base3IliasRoot), '/\\') . DIRECTORY_SEPARATOR;
 	}
 
 	protected static function ensureDirectory(string $path): void {
@@ -345,6 +336,48 @@ class Base3IliasRuntime {
 
 		require_once $autoloaderFile;
 		Autoloader::register();
+
+		foreach (self::getBase3Modules() as $name => $module) {
+			if ($name === 'Base3Framework') continue;
+
+			$srcPath = self::resolveBase3ModulePath($module) . DIRECTORY_SEPARATOR . 'src';
+			if (!is_dir($srcPath)) continue;
+
+			$namespace = rtrim((string) $module['namespace'], '\\') . '\\';
+			Autoloader::registerPlugin($namespace, rtrim($srcPath, '/\\') . DIRECTORY_SEPARATOR);
+		}
+	}
+
+	public static function getBase3ModuleRegistry(): Base3IliasModuleRegistry {
+		if (self::$moduleRegistry === null) {
+			$discoveryRoots = [DIR_COMPONENTS];
+
+			if (defined('DIR_BASE3_MODULE_ROOTS') && is_array(DIR_BASE3_MODULE_ROOTS)) {
+				foreach (DIR_BASE3_MODULE_ROOTS as $root) {
+					if (is_string($root) && trim($root) !== '') $discoveryRoots[] = $root;
+				}
+			}
+
+			self::$moduleRegistry = new Base3IliasModuleRegistry(
+				DIR_ILIAS,
+				array_values(array_unique($discoveryRoots)),
+				DIR_BASE3_ARTIFACTS . 'base3modules.php'
+			);
+		}
+
+		return self::$moduleRegistry;
+	}
+
+	public static function getBase3Modules(): array {
+		return self::getBase3ModuleRegistry()->getModules();
+	}
+
+	public static function resolveBase3ModulePath(array|string $module): string {
+		if (is_string($module)) {
+			return self::getBase3ModuleRegistry()->requireModulePath($module);
+		}
+
+		return self::getBase3ModuleRegistry()->resolveModulePath($module);
 	}
 
 	protected static function isIliasBooted(): bool {
