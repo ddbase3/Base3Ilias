@@ -16,13 +16,13 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	<div class="errorlog-actions">
 		<label class="errorlog-num">
 			<?php echo htmlspecialchars($t('files', 'Files:')); ?>
-			<input type="number" id="errorlog-num" min="1" max="<?php echo (int)$this->_['maxFiles']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" onchange="errorLogRefresh(true)">
+			<input type="number" id="errorlog-num" min="1" max="<?php echo (int)$this->_['maxFiles']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" data-errorlog-refresh-input>
 		</label>
 
-		<button type="button" onclick="errorLogRefresh(true)"><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
+		<button type="button" data-errorlog-refresh><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
 
 		<label class="errorlog-autorefresh">
-			<input type="checkbox" id="errorlog-autorefresh" checked onchange="errorLogToggleAutoRefresh()">
+			<input type="checkbox" id="errorlog-autorefresh" checked data-errorlog-autorefresh-input>
 			<?php echo htmlspecialchars($t('auto_refresh', 'Auto-refresh (3s)')); ?>
 		</label>
 
@@ -276,6 +276,11 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 </style>
 
 <script>
+(function() {
+	const root = document.querySelector('.base3ilias-errorlog');
+	if(!root) return;
+	const requests = new Set();
+
 	const ERRORLOG_I18N = <?php echo json_encode([
 		'yes' => $t('value_yes', 'yes'),
 		'no' => $t('value_no', 'no'),
@@ -298,11 +303,11 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	let errorLogFileCache = {};
 
 	function errorLogSetLoading(state) {
-		document.getElementById("errorlog-loading").style.display = state ? "flex" : "none";
+		root.querySelector("#errorlog-loading").style.display = state ? "flex" : "none";
 	}
 
 	function errorLogSetMessage(message) {
-		const el = document.getElementById("errorlog-message");
+		const el = root.querySelector("#errorlog-message");
 		const text = String(message || "");
 
 		if (text === "") {
@@ -330,7 +335,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	}
 
 	function errorLogStopAutoRefresh() {
-		const checkbox = document.getElementById("errorlog-autorefresh");
+		const checkbox = root.querySelector("#errorlog-autorefresh");
 		checkbox.checked = false;
 
 		if (errorLogTimer) {
@@ -342,7 +347,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	function errorLogRenderFiles(files) {
 		errorLogFiles = files || [];
 
-		const body = document.getElementById("errorlog-files-body");
+		const body = root.querySelector("#errorlog-files-body");
 
 		if (errorLogFiles.length === 0) {
 			body.innerHTML = '<tr><td colspan="4" class="errorlog-muted">' + errorLogEsc(ERRORLOG_I18N.no_files) + '</td></tr>';
@@ -364,7 +369,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 				expandedExists = true;
 			}
 
-			html += '<tr class="errorlog-file-row' + (expanded ? " active" : "") + '" onclick="errorLogToggleFile(' + i + ')">' +
+			html += '<tr class="errorlog-file-row' + (expanded ? " active" : "") + '" data-errorlog-file-index="' + i + '">' +
 				'<td><span class="errorlog-file-name">' + errorLogEsc(name) + "</span></td>" +
 				'<td class="errorlog-cell-mono">' + errorLogEsc(size) + "</td>" +
 				'<td class="errorlog-cell-mono">' + errorLogEsc(mtime) + "</td>" +
@@ -387,11 +392,11 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 		const cached = errorLogFileCache[file];
 
 		if (!cached || cached.loading) {
-			return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4"><div class="errorlog-muted">' + errorLogEsc(ERRORLOG_I18N.loading_file) + '</div></td></tr>';
+			return '<tr class="errorlog-expanded-row"><td colspan="4"><div class="errorlog-muted">' + errorLogEsc(ERRORLOG_I18N.loading_file) + '</div></td></tr>';
 		}
 
 		if (cached.error) {
-			return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4"><div class="errorlog-message">' + errorLogEsc(cached.error) + '</div></td></tr>';
+			return '<tr class="errorlog-expanded-row"><td colspan="4"><div class="errorlog-message">' + errorLogEsc(cached.error) + '</div></td></tr>';
 		}
 
 		const data = cached.data || {};
@@ -403,7 +408,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 			warning = '<div class="errorlog-content-warning">' + errorLogEsc(ERRORLOG_I18N.truncated) + '</div>';
 		}
 
-		return '<tr class="errorlog-expanded-row" onclick="event.stopPropagation()"><td colspan="4">' +
+		return '<tr class="errorlog-expanded-row"><td colspan="4">' +
 			'<div class="errorlog-content-head">' +
 				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.file) + ':</strong> <span class="mono">' + errorLogEsc(data.file || file) + '</span></span>' +
 				'<span><strong>' + errorLogEsc(ERRORLOG_I18N.size) + ':</strong> <span class="mono">' + errorLogEsc(data.size_formatted || "–") + '</span></span>' +
@@ -442,16 +447,21 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	}
 
 	async function errorLogLoadFile(file) {
+		if(!root.isConnected) return;
+		const controller = new AbortController();
+		requests.add(controller);
 		try {
 			const url = new URL(ERRORLOG_ENDPOINT + "read", window.location.href);
 			url.searchParams.set("file", file);
 
 			const response = await fetch(url.toString(), {
 				method: "GET",
-				headers: { "Accept": "application/json" }
+				headers: { "Accept": "application/json" },
+				signal: controller.signal
 			});
 
 			const text = await response.text();
+			if(!root.isConnected) return;
 			let json;
 
 			try {
@@ -477,26 +487,35 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 			errorLogFileCache[file] = { data: json.data || {} };
 			errorLogRenderFiles(errorLogFiles);
 		} catch (err) {
-			errorLogFileCache[file] = { error: ERRORLOG_I18N.file_load_failed };
-			errorLogRenderFiles(errorLogFiles);
+			if(root.isConnected && err.name !== 'AbortError') {
+				errorLogFileCache[file] = { error: ERRORLOG_I18N.file_load_failed };
+				errorLogRenderFiles(errorLogFiles);
+			}
+		} finally {
+			requests.delete(controller);
 		}
 	}
 
 	async function errorLogRefresh(force = false) {
+		if(!root.isConnected) return;
 		errorLogSetLoading(true);
+		const controller = new AbortController();
+		requests.add(controller);
 
 		try {
-			const num = document.getElementById("errorlog-num").value || "<?php echo (int)$this->_['defaultNum']; ?>";
+			const num = root.querySelector("#errorlog-num").value || "<?php echo (int)$this->_['defaultNum']; ?>";
 
 			const url = new URL(ERRORLOG_ENDPOINT + "list", window.location.href);
 			url.searchParams.set("num", num);
 
 			const response = await fetch(url.toString(), {
 				method: "GET",
-				headers: { "Accept": "application/json" }
+				headers: { "Accept": "application/json" },
+				signal: controller.signal
 			});
 
 			const text = await response.text();
+			if(!root.isConnected) return;
 			let json;
 
 			try {
@@ -513,7 +532,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 				return;
 			}
 
-			document.getElementById("errorlog-lastupdate").textContent = json.timestamp || "–";
+			root.querySelector("#errorlog-lastupdate").textContent = json.timestamp || "–";
 
 			if (json.data && json.data.message) {
 				errorLogSetMessage(json.data.message);
@@ -523,14 +542,15 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 
 			errorLogRenderFiles((json.data && json.data.files) ? json.data.files : []);
 		} catch (err) {
-			errorLogSetMessage(ERRORLOG_I18N.list_load_failed);
+			if(root.isConnected && err.name !== 'AbortError') errorLogSetMessage(ERRORLOG_I18N.list_load_failed);
+		} finally {
+			requests.delete(controller);
+			if(root.isConnected) errorLogSetLoading(false);
 		}
-
-		errorLogSetLoading(false);
 	}
 
 	function errorLogToggleAutoRefresh() {
-		const checkbox = document.getElementById("errorlog-autorefresh");
+		const checkbox = root.querySelector("#errorlog-autorefresh");
 		const enabled = checkbox.checked;
 
 		if (errorLogTimer) {
@@ -548,6 +568,25 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 		}
 	}
 
+	root.querySelector('[data-errorlog-refresh-input]').addEventListener('change', () => errorLogRefresh(true));
+	root.querySelector('[data-errorlog-refresh]').addEventListener('click', () => errorLogRefresh(true));
+	root.querySelector('[data-errorlog-autorefresh-input]').addEventListener('change', errorLogToggleAutoRefresh);
+	root.querySelector('#errorlog-files-body').addEventListener('click', (event) => {
+		const row = event.target.closest('[data-errorlog-file-index]');
+		if(row) errorLogToggleFile(Number(row.dataset.errorlogFileIndex));
+	});
+
+	const panel = root.closest('[data-base3-tab-panel]');
+	if(panel) {
+		panel.addEventListener('base3:tab-control:unload', () => {
+			clearInterval(errorLogTimer);
+			errorLogTimer = null;
+			for(const controller of requests) controller.abort();
+			requests.clear();
+		}, { once: true });
+	}
+
 	errorLogToggleAutoRefresh();
 	errorLogRefresh(true);
+})();
 </script>

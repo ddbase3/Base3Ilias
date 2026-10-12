@@ -16,13 +16,13 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	<div class="log-actions">
 		<label class="log-num">
 			<?php echo htmlspecialchars($t('entries', 'Entries:')); ?>
-			<input type="number" id="ilias-log-num" min="1" max="<?php echo (int)$this->_['maxNum']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" onchange="iliasLogRefresh(true)">
+			<input type="number" id="ilias-log-num" min="1" max="<?php echo (int)$this->_['maxNum']; ?>" value="<?php echo (int)$this->_['defaultNum']; ?>" data-iliaslog-refresh-input>
 		</label>
 
-		<button type="button" onclick="iliasLogRefresh(true)"><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
+		<button type="button" data-iliaslog-refresh><?php echo htmlspecialchars($t('refresh_now', 'Refresh now')); ?></button>
 
 		<label class="log-autorefresh">
-			<input type="checkbox" id="ilias-log-autorefresh" checked onchange="iliasLogToggleAutoRefresh()">
+			<input type="checkbox" id="ilias-log-autorefresh" checked data-iliaslog-autorefresh-input>
 			<?php echo htmlspecialchars($t('auto_refresh', 'Auto-refresh (3s)')); ?>
 		</label>
 
@@ -208,6 +208,11 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 </style>
 
 <script>
+(function() {
+	const root = document.querySelector('.base3ilias-log');
+	if(!root) return;
+	const requests = new Set();
+
 	const ILIAS_LOG_I18N = <?php echo json_encode([
 		'no_logs' => $t('no_logs', 'No log entries found.'),
 		'invalid_json' => $t('invalid_json', 'The response could not be parsed as JSON.'),
@@ -218,11 +223,11 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	let iliasLogTimer = null;
 
 	function iliasLogSetLoading(state) {
-		document.getElementById("ilias-log-loading").style.display = state ? "flex" : "none";
+		root.querySelector("#ilias-log-loading").style.display = state ? "flex" : "none";
 	}
 
 	function iliasLogSetMessage(message) {
-		const el = document.getElementById("ilias-log-message");
+		const el = root.querySelector("#ilias-log-message");
 		const text = String(message || "");
 
 		if (text === "") {
@@ -253,7 +258,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	}
 
 	function iliasLogRenderRows(rows) {
-		const body = document.getElementById("ilias-log-body");
+		const body = root.querySelector("#ilias-log-body");
 
 		if (!rows || rows.length === 0) {
 			body.innerHTML = '<tr><td colspan="5" class="log-muted">' + iliasLogEsc(ILIAS_LOG_I18N.no_logs) + '</td></tr>';
@@ -281,20 +286,25 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 	}
 
 	async function iliasLogRefresh(force = false) {
+		if(!root.isConnected) return;
 		iliasLogSetLoading(true);
+		const controller = new AbortController();
+		requests.add(controller);
 
 		try {
-			const num = document.getElementById("ilias-log-num").value || "<?php echo (int)$this->_['defaultNum']; ?>";
+			const num = root.querySelector("#ilias-log-num").value || "<?php echo (int)$this->_['defaultNum']; ?>";
 
 			const url = new URL(ILIAS_LOG_ENDPOINT + "tail", window.location.href);
 			url.searchParams.set("num", num);
 
 			const response = await fetch(url.toString(), {
 				method: "GET",
-				headers: { "Accept": "application/json" }
+				headers: { "Accept": "application/json" },
+				signal: controller.signal
 			});
 
 			const text = await response.text();
+			if(!root.isConnected) return;
 			let json;
 
 			try {
@@ -311,7 +321,7 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 				return;
 			}
 
-			document.getElementById("ilias-log-lastupdate").textContent = json.timestamp || "–";
+			root.querySelector("#ilias-log-lastupdate").textContent = json.timestamp || "–";
 
 			if (json.data && json.data.message) {
 				iliasLogSetMessage(json.data.message);
@@ -322,14 +332,15 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 			iliasLogRenderRows((json.data && json.data.logs) ? json.data.logs : []);
 
 		} catch (err) {
-			iliasLogSetMessage(ILIAS_LOG_I18N.load_failed);
+			if(root.isConnected && err.name !== 'AbortError') iliasLogSetMessage(ILIAS_LOG_I18N.load_failed);
+		} finally {
+			requests.delete(controller);
+			if(root.isConnected) iliasLogSetLoading(false);
 		}
-
-		iliasLogSetLoading(false);
 	}
 
 	function iliasLogToggleAutoRefresh() {
-		const enabled = document.getElementById("ilias-log-autorefresh").checked;
+		const enabled = root.querySelector("#ilias-log-autorefresh").checked;
 
 		if (iliasLogTimer) {
 			clearInterval(iliasLogTimer);
@@ -341,6 +352,21 @@ $t = static function(string $key, string $fallback) use ($translations): string 
 		}
 	}
 
+	root.querySelector('[data-iliaslog-refresh-input]').addEventListener('change', () => iliasLogRefresh(true));
+	root.querySelector('[data-iliaslog-refresh]').addEventListener('click', () => iliasLogRefresh(true));
+	root.querySelector('[data-iliaslog-autorefresh-input]').addEventListener('change', iliasLogToggleAutoRefresh);
+
+	const panel = root.closest('[data-base3-tab-panel]');
+	if(panel) {
+		panel.addEventListener('base3:tab-control:unload', () => {
+			clearInterval(iliasLogTimer);
+			iliasLogTimer = null;
+			for(const controller of requests) controller.abort();
+			requests.clear();
+		}, { once: true });
+	}
+
 	iliasLogToggleAutoRefresh();
 	iliasLogRefresh(true);
+})();
 </script>
