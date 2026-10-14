@@ -352,6 +352,8 @@ It does not copy the complete ILIAS database into a separate store. Queries run 
 
 The adapter supports transactions, reads, writes, escaping, affected-row information and insert-ID tracking according to the BASE3 database contract.
 
+Insert IDs are read directly through the existing ILIAS PDO database service after write statements. The adapter does not open a second database connection or issue separate SQL queries to reset or retrieve `LAST_INSERT_ID()`. The SQL issued by consumers and their applicable data processing remain unchanged.
+
 Any personal data accessed through this adapter depends on the SQL issued by the consuming service.
 
 ## 20. Client-local BASE3 directories

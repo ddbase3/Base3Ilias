@@ -64,6 +64,15 @@ The main goal of **Base3Ilias** is to allow developers to:
 - Usage of already developed BASE3 Plugins like AI tools, chatbot, agent system, reporting, crm, different api connectors and more
 - Expose ILIAS Resource Storage Service resources through the ResourceFoundation file-storage contracts
 
+## ILIAS database adapter
+
+`Base3IliasDatabase` uses the existing ILIAS database connection. It requires the ILIAS
+`ilDBPdoInterface`, which provides `getLastInsertId()` without an additional SQL query.
+After each `nonQuery()` the adapter stores the affected-row count and the native PDO insert ID.
+On MySQL/MariaDB, statements without an insert ID report `0`. This avoids the former
+`SELECT LAST_INSERT_ID(0)` and `SELECT LAST_INSERT_ID()` statements and does not change
+the shared transaction connection.
+
 ## ILIAS Resource Storage adapter
 
 Base3Ilias binds `ResourceFoundation\Api\IFileStorageFactory` to an ILIAS-specific factory. The factory opens an existing ILIAS Resource Storage Service area and returns it as a normal `IFileStorage`.

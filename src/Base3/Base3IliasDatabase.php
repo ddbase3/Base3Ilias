@@ -3,28 +3,28 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Database\Api\IDatabase;
-use ilDBInterface;
+use ilDBPdoInterface;
 
 /**
  * Base3IliasDatabase
  *
- * Adapter that maps the BASE3 IDatabase interface to the ILIAS database service (ilDBInterface).
+ * Adapter that maps the BASE3 IDatabase interface to the ILIAS PDO database service (ilDBPdoInterface).
  *
  * Notes / limitations:
  * - ILIAS manages the database connection lifecycle via DIC; connect() validates availability and
  *   disconnect() is a no-op.
  * - affectedRows() contains the result of the latest nonQuery() call.
- * - insertId() uses the MySQL/MariaDB connection-local LAST_INSERT_ID() value. Before every nonQuery()
- *   this value is reset to 0, so non-insert statements cannot expose a stale ID.
+ * - insertId() captures the native PDO insert ID immediately after manipulate(). The MySQL/MariaDB
+ *   driver reports 0 for statements that do not produce an insert ID. No extra SQL is executed.
  * - Database exceptions are recorded for isError()/errorNumber()/errorMessage() and rethrown unchanged.
  * - Transaction return values are checked; failed transaction operations are exposed as exceptions.
  */
 class Base3IliasDatabase implements IDatabase {
 
 	/**
-	 * @var ilDBInterface|null
+	 * @var ilDBPdoInterface|null
 	 */
-	private ?ilDBInterface $db = null;
+	private ?ilDBPdoInterface $db = null;
 
 	private int $lastAffectedRows = 0;
 	private int|string $lastInsertId = 0;
@@ -108,10 +108,9 @@ class Base3IliasDatabase implements IDatabase {
 
 		try {
 			$this->requireDb();
-			$this->resetConnectionInsertId();
 
 			$this->lastAffectedRows = $this->db->manipulate($query);
-			$this->lastInsertId = $this->readConnectionInsertId();
+			$this->lastInsertId = $this->db->getLastInsertId();
 		} catch(\Throwable $error) {
 			$this->rememberError($error);
 			throw $error;
@@ -247,29 +246,6 @@ class Base3IliasDatabase implements IDatabase {
 
 	public function errorMessage(): string {
 		return $this->lastError?->getMessage() ?? '';
-	}
-
-	private function resetConnectionInsertId(): void {
-		$stmt = $this->db->query('SELECT LAST_INSERT_ID(0) AS insert_id');
-		$this->db->free($stmt);
-	}
-
-	private function readConnectionInsertId(): int|string {
-		$stmt = $this->db->query('SELECT LAST_INSERT_ID() AS insert_id');
-
-		try {
-			$row = $this->db->fetchAssoc($stmt);
-		} finally {
-			$this->db->free($stmt);
-		}
-
-		$value = $row['insert_id'] ?? 0;
-
-		if(is_int($value) || is_string($value)) {
-			return $value;
-		}
-
-		return (int)$value;
 	}
 
 	private function resetStatementState(): void {
