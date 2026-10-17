@@ -15,6 +15,8 @@ Base3Ilias has two roles:
 
 The BASE3 module identity is independent from the physical installation path.
 
+At runtime, module discovery uses the physical location of the installed `Base3Ilias` package. Modules under ILIAS `components/` are discovered across that complete directory tree; packages embedded outside it are discovered from their shared module directory. This works even when a UIHook starts the runtime before the adapter plugin initializes. The runtime sets `DIR_BASE3` and `DIR_PLUGIN` from the discovered installation, without requiring a host-specific discovery override.
+
 ### Private BASE3 ILIAS installation
 
 Clone this repository directly as the ILIAS component:
@@ -47,6 +49,33 @@ In this layout the nested `Base3Ilias.php` wrapper is not an ILIAS component bec
 
 Only one native wrapper must be installed in a concrete ILIAS installation. Do not install both `components/Base3/Base3Ilias` and `components/Qualitus/Base3Core` with another copy of Base3Ilias at the same time.
 
+## Transitional ILIAS 9 module deployment
+
+ILIAS 9 temporarily loads BASE3 modules from
+`Customizing/global/plugins/Services/UIComponent/UserInterfaceHook/Base3IliasAdapter/lib/`.
+It does not provide the ILIAS Component Revision `ILIAS\Component\Resource\PublicAsset`
+interface. The module class map must be able to include `src/Ilias/ComponentBootstrap.php`
+without requiring that interface; the component's asset contributions are loaded
+only when the native component bootstrap actually runs on ILIAS 10+.
+
+The native component bootstrap now retains asset contributions when given
+an ordinary array as well as when given an `ArrayAccess` object.
+
+The ILIAS 9 `IAssetResolver` returns direct module asset URLs instead of using
+ILIAS 10+ asset publishing. For a module installed under the adapter, the
+modular chatbot stylesheet is expected at:
+
+`./Customizing/global/plugins/Services/UIComponent/UserInterfaceHook/Base3IliasAdapter/lib/ClientStack/assets/modularchatbot/styles/chatbot.css`
+
+When the chatbot HTML is present but unstyled, inspect the CSS and JS requests
+in the browser network panel first. A missing stylesheet is not evidence of a
+Component Revision deployment failure on ILIAS 9, because native component
+asset deployment is not used there.
+
+This ILIAS 9 path is a transitional deployment and not a long-term supported
+installation mode. No additional ILIAS 9 asset publisher or alternate class map
+has been introduced.
+
 ## Requirements
 
 - ILIAS version >= 10.0
@@ -73,6 +102,15 @@ On MySQL/MariaDB, statements without an insert ID report `0`. This avoids the fo
 `SELECT LAST_INSERT_ID(0)` and `SELECT LAST_INSERT_ID()` statements and does not change
 the shared transaction connection.
 
+## Production PHP error reporting
+
+`Base3IliasRuntime` keeps `display_errors` disabled when `DEBUG=0`, but leaves fatal
+PHP errors enabled in `error_reporting()` and enables `log_errors`. This ensures
+uncaught exceptions remain available in the web server / PHP-FPM error log while
+the response does not expose stack traces to clients. `DEBUG=1` retains full
+PHP error reporting. The log destination and retention are controlled by the
+hosting PHP configuration, not by Base3Ilias.
+
 ## ILIAS Resource Storage adapter
 
 Base3Ilias binds `ResourceFoundation\Api\IFileStorageFactory` to an ILIAS-specific factory. The factory opens an existing ILIAS Resource Storage Service area and returns it as a normal `IFileStorage`.
@@ -85,14 +123,15 @@ The adapter supports three modes:
 
 The identifier lifecycle stays with the calling domain object. Base3Ilias does not persist RID or RCID values for consumers. Collection member resources created through `write()` or `copy()` are managed internally by the collection storage implementation. The adapter also implements the `IFileStorage` `copy()` and `move()` operations according to the capabilities of each IRSS mode.
 
+The concrete `Base3IliasFileStorageStakeholder` also supports the temporary
+ILIAS 9 IRSS stakeholder contract. ILIAS 9 requires a parameterless constructor
+but its abstract stakeholder does not provide one or initialize the owner fields.
+Base3Ilias initializes these fields to the current ILIAS user ID if available,
+otherwise to `SYSTEM_USER_ID` (or `6` when that constant is unavailable). This
+change is limited to the stakeholder; the remaining IRSS storage operations have
+not been certified against ILIAS 9.
+
 See [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md) for the operation mapping, ownership rules, and compatibility notes.
-
-### Managed FileManager administration endpoint
-
-`Base3IliasFileManagerOutput` is a discoverable `IOutput` (`base3iliasfilemanageroutput`) invoked through the normal BASE3 link target and service selector. It accepts `fm_group`, `fm_name` and `fm_action` in the query string, checks `IUsermanager::can(Permission::for('system', 'admin'))`, verifies that the owner appears in the active `IBase3IliasSettings` administration configuration with resources enabled, and delegates to the existing `Base3IliasFileManagerHttpService`. The existing JSON, multipart chunk and download behavior is unchanged. This does not add a second FileManager implementation.
-
-Project plugins providing a FileManager-enabled administration display must generate that display's `resources.endpoints` in their own configuration. `Base3IliasChatbotConfigService::getDisplayData()` shares the existing Chatbot display data construction with the UIHook/RepositoryObject/PageComponent integrations without involving `Base3IliasAdapterAjaxGUI`.
-
 
 ## License
 

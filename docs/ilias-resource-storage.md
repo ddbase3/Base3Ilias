@@ -193,6 +193,17 @@ The adapter is written against the common IRSS API available in the supplied ILI
 
 No version branch is currently necessary. If a later ILIAS version changes one of these public boundaries, compatibility handling belongs at the Base3Ilias adapter boundary and can use `ISystemService` to select the required host-specific call.
 
+## ILIAS 9 stakeholder compatibility
+
+ILIAS 9 declares a parameterless `ResourceStakeholder::__construct()` but its
+`AbstractResourceStakeholder` does not implement the constructor or initialize
+`default_owner` and `current_user`. The concrete Base3Ilias stakeholder now
+provides that initialization using the current ILIAS user ID, or the ILIAS
+system user ID as a fallback. This preserves the existing behavior on ILIAS
+10+ without introducing a second stakeholder implementation. This check covers
+the stakeholder boundary only; the other IRSS operations remain documented
+against ILIAS 10 and 11 above.
+
 ## Stakeholder behavior
 
 New collection members and single-file or collection-member resources written through manager operations use `Base3IliasFileStorageStakeholder` with the technical stakeholder ID:
@@ -237,9 +248,6 @@ DIR_BASE3_ARTIFACTS/filemanager/<owner-hash>/<upload-id>/
 ```
 
 `Base3IliasFileManagerHttpService` maps the ClientStack FileManager HTTP protocol to the managed storage and upload services. Host integrations remain responsible for authorization and for selecting their stable logical owner identity.
-
-For the BASE3 administration, the existing HTTP service is invoked by the discoverable `Base3IliasFileManagerOutput` instead of a special command in `Base3IliasAdapterAjaxGUI`. The output verifies the `system/admin` permission using `IUsermanager` and resolves allowed owner identities from the project's `IBase3IliasSettings` data. `ILinkTargetService` builds its URL using output name `base3iliasfilemanageroutput`, and `Base3IliasChatbotConfigService::getDisplayData()` supplies the ClientStack endpoint list. The existing host-specific UIHook, RepositoryObject and PageComponent command handlers are not changed by this adapter cleanup.
-
 
 The current ResourceFoundation storage contract used by Base3Ilias includes native `copy()` and `move()` operations. Base3Ilias maps those operations directly to the active `IFileStorage`; it does not synthesize them through `read()`, `write()` and `delete()`.
 

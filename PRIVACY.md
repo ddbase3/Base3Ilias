@@ -289,6 +289,17 @@ The implementation:
 
 Error logs may contain usernames, IP addresses, request data, stack traces, filesystem paths, object identifiers or other personal and operational information.
 
+### 15.3 PHP runtime fatal-error logging
+
+`Base3IliasRuntime::configureDebug()` enables PHP `log_errors` and keeps fatal
+PHP error categories enabled when debug output is disabled. This can record
+uncaught exception messages, source paths and stack traces to the PHP error
+log configured by the host. It does not add a Base3Ilias-managed log file, and
+Base3Ilias does not set retention or redact these PHP fatal-error entries.
+Administrators must restrict log access and configure retention at the host
+level. Normal successful requests do not emit new PHP error-log entries from
+this change.
+
 ## 16. BASE3 log cleanup job
 
 The component contains `Base3LogCleanupJob` for an optional database table named `base3_log`.
@@ -378,7 +389,15 @@ This provides cleanup for that temporary artifact area. It does not clear the `b
 
 ## 21. Static assets
 
-Base3Ilias publishes static `assets` directories from BASE3 components through the ILIAS public asset mechanism.
+On ILIAS 10+ with a native ILIAS component bootstrap, Base3Ilias publishes
+static `assets` directories from BASE3 modules through ILIAS Component Revision
+`PublicAsset` contributions. Loading the generic BASE3 class map does not
+instantiate or register this native asset publisher.
+
+In the temporary ILIAS 9 deployment, the asset resolver references the static
+files directly under the adapter's local `lib/<ModuleName>/assets/` tree; there
+is no native ILIAS Component Revision asset publishing in that deployment. The
+assets are served by the host web server if its configuration permits access.
 
 The asset resolver can add a short MD5-derived content hash to the public asset URL for cache busting. This hashes the asset file content and is not a user identifier.
 
@@ -481,15 +500,8 @@ The adapter can process arbitrary uploaded or generated file content and the cor
 
 ILIAS remains the authoritative storage system. Base3Ilias does not derive or directly access physical `storage/fsv2` paths and does not write IRSS database tables directly. Reads and writes use the ILIAS Resource Storage Service API.
 
-For resources created by collection `write()` or `copy()` operations and for single-file or collection-member resources updated through the adapter, Base3Ilias uses an IRSS stakeholder named `base3ilias_file_storage`. Container mutations use the existing container resource and do not add a stakeholder through the container mutation API. The stakeholder owner defaults to the current ILIAS user when available and otherwise follows the ILIAS stakeholder fallback behavior.
+For resources created by collection `write()` or `copy()` operations and for single-file or collection-member resources updated through the adapter, Base3Ilias uses an IRSS stakeholder named `base3ilias_file_storage`. Container mutations use the existing container resource and do not add a stakeholder through the container mutation API. The stakeholder owner defaults to the current ILIAS user ID when available and otherwise to the ILIAS system user ID (`SYSTEM_USER_ID`, or `6` if that constant is unavailable). This is initialized by Base3Ilias even on ILIAS 9, where the abstract IRSS stakeholder does not initialize an owner.
 
 The adapter does not define a general retention period. The calling component remains responsible for persisting and removing its RID or RCID reference. Copying a collection member can create an additional IRSS member resource with the same file content, while copying a container file creates another path inside the same container. Moving a collection or container file writes the target first and removes the source only after the target operation succeeded. Moving a single-file storage changes the current file name while keeping the same RID. Deleting a collection member removes it from that logical collection and asks IRSS to release the Base3Ilias stakeholder. Deleting a single-file resource removes the Base3Ilias stakeholder and only removes the physical IRSS resource when no other stakeholder keeps it in use. Container file and directory deletion changes the content of the existing container resource rather than deleting the container RID itself.
 
 File contents, file names and directory names can contain personal or confidential information. Access to a factory and to the externally managed storage identifier must therefore be restricted to code that is authorized to access the corresponding ILIAS-backed storage area.
-
-
-## Managed FileManager administration output (17 October 2026)
-
-`Base3IliasFileManagerOutput` is a classmap-discovered BASE3 endpoint for the existing ClientStack FileManager protocol. It reads the action and logical owner identifiers (`fm_action`, `fm_group`, `fm_name`) through `IRequest`, checks the existing `IUsermanager` `system/admin` permission and the current BASE3 user ID, and verifies that the requested owner is present in `IBase3IliasSettings` with resources enabled. It then delegates to the existing `Base3IliasFileManagerHttpService` with the existing collection storage mode, per-user upload session identity and 50 MiB limit. No separate file store or user directory is created by this endpoint.
-
-FileManager operations can handle names, content and metadata; the same existing managed IRSS mapping and temporary upload sessions are used. The provided sources do not establish deployment-specific retention, backup, audit-log configuration or host-side router behavior. Those require verification on the target ILIAS installation. BASE3 permissions are evaluated through the common interfaces, not by calling ILIAS RBAC directly from this new endpoint.

@@ -12,7 +12,6 @@ use RuntimeException;
 
 require_once dirname(__DIR__, 2) . '/classes/Base3IliasActivityRepositoryBridge.php';
 require_once dirname(__DIR__, 2) . '/classes/Base3IliasModuleRegistry.php';
-require_once dirname(__DIR__, 2) . '/classes/Base3IliasPublicAsset.php';
 
 final class ComponentBootstrap {
 
@@ -74,7 +73,9 @@ final class ComponentBootstrap {
 	 * Deploy all Base3 module assets to public/components/Base3/[ModuleName].
 	 * Source modules may live at any depth below components/.
 	 */
-	private function deployAssets(array | \ArrayAccess $contribute): void {
+	private function deployAssets(array | \ArrayAccess &$contribute): void {
+		require_once dirname(__DIR__, 2) . '/classes/Base3IliasPublicAsset.php';
+
 		$registry = $this->getModuleRegistry();
 
 		foreach ($registry->getModules() as $moduleName => $module) {

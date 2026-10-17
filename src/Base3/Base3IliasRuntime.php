@@ -262,7 +262,10 @@ class Base3IliasRuntime {
 		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src' . DIRECTORY_SEPARATOR);
 		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test' . DIRECTORY_SEPARATOR);
 
-		if (!defined('DIR_BASE3')) define('DIR_BASE3', DIR_COMPONENTS . 'Base3' . DIRECTORY_SEPARATOR);
+		if (!defined('DIR_BASE3')) {
+			$base3IliasRoot = self::getBase3ModuleRegistry()->requireModulePath('Base3Ilias');
+			define('DIR_BASE3', rtrim(dirname($base3IliasRoot), '/\\') . DIRECTORY_SEPARATOR);
+		}
 		if (!defined('DIR_PLUGIN')) define('DIR_PLUGIN', DIR_BASE3);
 	}
 
@@ -325,7 +328,11 @@ class Base3IliasRuntime {
 
 		ini_set('display_errors', $enabled ? '1' : '0');
 		ini_set('display_startup_errors', $enabled ? '1' : '0');
-		error_reporting($enabled ? E_ALL | E_STRICT : 0);
+		ini_set('log_errors', '1');
+
+		// Fatal errors must remain visible in the server log outside debug mode.
+		$fatalErrors = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR;
+		error_reporting($enabled ? E_ALL | E_STRICT : $fatalErrors);
 	}
 
 	protected static function registerBase3Autoloader(): void {
@@ -350,11 +357,24 @@ class Base3IliasRuntime {
 
 	public static function getBase3ModuleRegistry(): Base3IliasModuleRegistry {
 		if (self::$moduleRegistry === null) {
-			$discoveryRoots = [DIR_COMPONENTS];
+			$moduleRoot = realpath(dirname(__DIR__, 2));
+			if ($moduleRoot === false) {
+				throw new RuntimeException('Base3Ilias module root could not be resolved.');
+			}
 
+			$componentsRoot = realpath(DIR_COMPONENTS);
+			$discoveryRoot = dirname($moduleRoot);
+			if ($componentsRoot !== false
+				&& str_starts_with($moduleRoot, rtrim($componentsRoot, '/\\') . DIRECTORY_SEPARATOR)) {
+				$discoveryRoot = $componentsRoot;
+			}
+
+			$discoveryRoots = [$discoveryRoot];
 			if (defined('DIR_BASE3_MODULE_ROOTS') && is_array(DIR_BASE3_MODULE_ROOTS)) {
 				foreach (DIR_BASE3_MODULE_ROOTS as $root) {
-					if (is_string($root) && trim($root) !== '') $discoveryRoots[] = $root;
+					if (!is_string($root) || trim($root) === '') continue;
+					$resolvedRoot = realpath($root);
+					if ($resolvedRoot !== false) $discoveryRoots[] = $resolvedRoot;
 				}
 			}
 
