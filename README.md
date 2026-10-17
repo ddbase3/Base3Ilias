@@ -87,6 +87,13 @@ The identifier lifecycle stays with the calling domain object. Base3Ilias does n
 
 See [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md) for the operation mapping, ownership rules, and compatibility notes.
 
+### Managed FileManager administration endpoint
+
+`Base3IliasFileManagerOutput` is a discoverable `IOutput` (`base3iliasfilemanageroutput`) invoked through the normal BASE3 link target and service selector. It accepts `fm_group`, `fm_name` and `fm_action` in the query string, checks `IUsermanager::can(Permission::for('system', 'admin'))`, verifies that the owner appears in the active `IBase3IliasSettings` administration configuration with resources enabled, and delegates to the existing `Base3IliasFileManagerHttpService`. The existing JSON, multipart chunk and download behavior is unchanged. This does not add a second FileManager implementation.
+
+Project plugins providing a FileManager-enabled administration display must generate that display's `resources.endpoints` in their own configuration. `Base3IliasChatbotConfigService::getDisplayData()` shares the existing Chatbot display data construction with the UIHook/RepositoryObject/PageComponent integrations without involving `Base3IliasAdapterAjaxGUI`.
+
+
 ## License
 
 This project is open-source and available under the GPL 3.0 License.

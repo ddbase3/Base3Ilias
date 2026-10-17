@@ -238,6 +238,9 @@ DIR_BASE3_ARTIFACTS/filemanager/<owner-hash>/<upload-id>/
 
 `Base3IliasFileManagerHttpService` maps the ClientStack FileManager HTTP protocol to the managed storage and upload services. Host integrations remain responsible for authorization and for selecting their stable logical owner identity.
 
+For the BASE3 administration, the existing HTTP service is invoked by the discoverable `Base3IliasFileManagerOutput` instead of a special command in `Base3IliasAdapterAjaxGUI`. The output verifies the `system/admin` permission using `IUsermanager` and resolves allowed owner identities from the project's `IBase3IliasSettings` data. `ILinkTargetService` builds its URL using output name `base3iliasfilemanageroutput`, and `Base3IliasChatbotConfigService::getDisplayData()` supplies the ClientStack endpoint list. The existing host-specific UIHook, RepositoryObject and PageComponent command handlers are not changed by this adapter cleanup.
+
+
 The current ResourceFoundation storage contract used by Base3Ilias includes native `copy()` and `move()` operations. Base3Ilias maps those operations directly to the active `IFileStorage`; it does not synthesize them through `read()`, `write()` and `delete()`.
 
 ### Current stream limitation

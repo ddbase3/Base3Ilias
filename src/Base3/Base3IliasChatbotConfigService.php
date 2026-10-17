@@ -29,9 +29,33 @@ final class Base3IliasChatbotConfigService {
 		string $submitLabel,
 		string $fileManagerBaseUrl
 	): void {
+		$display->setData($this->getDisplayData(
+			$group,
+			$name,
+			$title,
+			$description,
+			$submitLabel,
+			$fileManagerBaseUrl
+		));
+	}
+
+	/**
+	 * Returns the same host-provided resource configuration for a configured
+	 * BASE3 administration display without requiring a display instance.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function getDisplayData(
+		string $group,
+		string $name,
+		string $title,
+		string $description,
+		string $submitLabel,
+		string $fileManagerBaseUrl
+	): array {
 		$fileManagerBaseUrl = $this->resolveAbsoluteUrl($fileManagerBaseUrl);
 
-		$display->setData([
+		return [
 			'group' => $group,
 			'name' => $name,
 			'title' => $title,
@@ -45,7 +69,7 @@ final class Base3IliasChatbotConfigService {
 				'max_file_size' => Base3IliasFileManagerHttpService::DEFAULT_MAX_FILE_SIZE,
 				'accept' => 'application/pdf,.pdf',
 			]
-		]);
+		];
 	}
 
 	public function handleFileManager(
