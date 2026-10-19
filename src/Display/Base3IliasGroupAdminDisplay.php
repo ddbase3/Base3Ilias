@@ -5,230 +5,133 @@ namespace Base3Ilias\Display;
 use Base3\Api\IDisplay;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Dto\AuthorizationRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
-use Base3\Settings\Api\ISettingsStore;
+use Base3\Session\Api\ISession;
+use Base3\Usermanager\Permission;
 use Base3\Usermanager\Api\IUsermanager;
-use Base3\Usermanager\Group;
-use Base3Ilias\Base3\Base3IliasUsermanager;
-use ilObject;
-use ilObjUser;
-use ilRbacReview;
+use Base3Ilias\Service\Base3IliasAudienceEditor;
+use Base3Ilias\Service\Base3IliasGroupConfiguration;
+use InvalidArgumentException;
 
+/** Administers native-host-owned BASE3 group DTOs and discoverable membership criteria. */
 final class Base3IliasGroupAdminDisplay implements IDisplay {
 
-	private const ACTION_SAVE = 'save';
-
-	private array $translations = [];
+	private const SESSION_CSRF = 'authorization.groups.csrf';
 
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly IMvcView $view,
-		private readonly ISettingsStore $settingsStore,
+		private readonly Base3IliasGroupConfiguration $groups,
+		private readonly Base3IliasAudienceEditor $audiences,
+		private readonly IAuthorizationService $authorization,
 		private readonly IUsermanager $usermanager,
-		private readonly ilRbacReview $rbacreview,
-		private readonly ILinkTargetService $linkTargetService
+		private readonly ISession $session,
+		private readonly ILinkTargetService $links
 	) {}
 
-	public static function getName(): string {
-		return 'base3iliasgroupadmindisplay';
-	}
+	public static function getName(): string { return 'base3iliasgroupadmindisplay'; }
 
-	public function setData($data) {
-		// no-op
-	}
+	public function setData($data) {}
 
 	public function getHelp(): string {
-		$this->loadTranslations();
-
-		return $this->t('help', 'Maps stable BASE3 groups to ILIAS roles and users.');
+		return 'Manage BASE3 groups and their ILIAS user, role and plugin-defined criterion memberships. Native RBAC is not changed.';
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
-		$this->loadTranslations();
-		$message = '';
-
-		if ((string)$this->request->post('base3_group_action', '') === self::ACTION_SAVE) {
-			$this->saveSettings();
-			$message = $this->t('saved', 'Group assignments saved.');
+		if ($out !== 'html') throw new InvalidArgumentException('Group administration renders HTML only.');
+		if (!$this->authorization->decide(new AuthorizationRequest(
+			$this->authorization->getDefaultAuthority(), Permission::for('system', 'admin')
+		))->isAllowed() || !$this->isDeveloper()) {
+			http_response_code(403);
+			return '<p role="alert">Access denied.</p>';
 		}
-
-		$settings = $this->settingsStore->get(
-			Base3IliasUsermanager::SETTINGS_GROUP,
-			Base3IliasUsermanager::SETTINGS_NAME,
-			array()
-		);
-
+		$message = '';
+		$action = (string)$this->request->post('base3_group_action', '');
+		if ($action !== '') {
+			$this->assertCsrf();
+			switch ($action) {
+				case 'save':
+					$this->saveRules();
+					$message = 'Group memberships saved.';
+					break;
+				case 'create':
+					$this->groups->create((string)$this->request->post('base3_group_name', ''), (string)$this->request->post('base3_group_description', ''));
+					$message = 'BASE3 group created.';
+					break;
+				case 'remove':
+					$this->groups->remove((string)$this->request->post('base3_group_name', ''));
+					$message = 'BASE3 group removed.';
+					break;
+				default:
+					throw new InvalidArgumentException('Invalid BASE3 group action.');
+			}
+		}
+		$entries = [];
+		foreach ($this->groups->getEntries() as $entry) {
+			$entries[] = [
+				'name' => (string)$entry['group']->name,
+				'description' => (string)$entry['group']->info,
+				'editable' => $entry['editable'],
+				'source' => $entry['source'],
+				'rows' => $this->audiences->describe($entry['configuredCriteria']),
+				'codeCriteria' => $entry['codeCriteria'],
+				'expression' => $entry['criteria']
+			];
+		}
+		$settings = $this->groups->get();
+		$this->view->setPath(dirname(__DIR__, 2));
+		$this->view->loadBricks('Display');
 		$this->view->setTemplate('Display/Base3IliasGroupAdminDisplay.php');
-		$this->view->assign('groups', $this->getGroupRows($settings));
-		$this->view->assign('roleOptions', $this->getRoleOptions());
-		$this->view->assign('defaultGroup', trim((string)($settings['default_group'] ?? '')));
+		$this->view->assign('translations', array_merge($this->view->getBricks('base3ilias_group_admin_display') ?? [], $this->view->getBricks('base3ilias_audience_editor') ?? []));
+		$this->view->assign('entries', $entries);
+		$this->view->assign('roleOptions', $this->audiences->getRoleOptions());
+		$this->view->assign('criterionOptions', $this->audiences->getCriteria());
+		$this->view->assign('defaultGroup', (string)($settings['default_group'] ?? ''));
 		$this->view->assign('message', $message);
-		$this->view->assign('endpoint', $this->buildEndpoint());
-		$this->view->assign('translations', $this->translations);
-
+		$this->view->assign('endpoint', $this->links->getLink(['name' => self::getName(), 'out' => 'html']));
+		$this->view->assign('csrf', $this->csrfToken());
 		return $this->view->loadTemplate();
 	}
 
-	private function saveSettings(): void {
-		$roleAssignments = $this->request->post('base3_group_roles', array());
-		$userAssignments = $this->request->post('base3_group_user_ids', array());
-		$roleAssignments = is_array($roleAssignments) ? $roleAssignments : array();
-		$userAssignments = is_array($userAssignments) ? $userAssignments : array();
-
-		$assignments = array();
-		$configurableGroupNames = $this->getConfigurableGroupNames();
-
-		foreach ($configurableGroupNames as $groupName) {
-			$assignments[$groupName] = array(
-				'role_ids' => $this->normalizeIds($roleAssignments[$groupName] ?? array()),
-				'user_ids' => $this->normalizeIds($userAssignments[$groupName] ?? '')
-			);
+	private function saveRules(): void {
+		$submitted = $this->request->post('base3_group_rules', []);
+		if (!is_array($submitted)) throw new InvalidArgumentException('Invalid group rules.');
+		$known = [];
+		foreach ($this->groups->getEntries() as $entry) if ($entry['editable']) $known[(string)$entry['group']->name] = true;
+		foreach ($submitted as $name => $rows) {
+			if (!isset($known[$name]) || !is_array($rows)) throw new InvalidArgumentException('Unknown or locked group in form.');
 		}
+		$rules = [];
+		foreach ($known as $name => $ignored) $rules[$name] = $this->audiences->parse($submitted[$name] ?? [], null, true);
+		$this->groups->replaceAll($rules, trim((string)$this->request->post('base3_default_group', '')));
+	}
 
-		$defaultGroup = trim((string)$this->request->post('base3_default_group', ''));
-		if (!in_array($defaultGroup, $configurableGroupNames, true)) {
-			$defaultGroup = '';
+	/** BASE3 membership is authoritative for development; ILIAS administrator is checked above. */
+	private function isDeveloper(): bool {
+		foreach ($this->usermanager->getGroups() as $group) {
+			if ((string)$group->name === 'development') return true;
 		}
-
-		$this->settingsStore->set(
-			Base3IliasUsermanager::SETTINGS_GROUP,
-			Base3IliasUsermanager::SETTINGS_NAME,
-			array(
-				'assignments' => $assignments,
-				'default_group' => $defaultGroup
-			)
-		);
-		$this->settingsStore->save();
+		return false;
 	}
 
-	private function getGroupRows(array $settings): array {
-		$assignments = is_array($settings['assignments'] ?? null) ? $settings['assignments'] : array();
-		$rows = array();
-
-		foreach ($this->usermanager->getAllGroups() as $group) {
-			if (!$group instanceof Group) continue;
-
-			$groupName = trim((string)$group->name);
-			if ($groupName === '') continue;
-
-			$automatic = $this->isAutomaticGroup($groupName);
-			$assignment = is_array($assignments[$groupName] ?? null) ? $assignments[$groupName] : array();
-			$userIds = $automatic ? array() : $this->normalizeIds($assignment['user_ids'] ?? array());
-
-			$rows[] = array(
-				'name' => $groupName,
-				'info' => trim((string)$group->info),
-				'automatic' => $automatic,
-				'role_ids' => $automatic ? array() : $this->normalizeIds($assignment['role_ids'] ?? array()),
-				'user_ids' => $userIds,
-				'user_id_value' => implode(', ', $userIds),
-				'users' => $this->getUserLabels($userIds)
-			);
+	private function assertCsrf(): void {
+		$expected = $this->session->get(self::SESSION_CSRF);
+		$provided = $this->request->post('base3_group_csrf', '');
+		if (!is_string($expected) || !is_string($provided) || !hash_equals($expected, $provided)) {
+			http_response_code(403);
+			throw new InvalidArgumentException('Invalid group administration CSRF token.');
 		}
-
-		return $rows;
 	}
 
-	private function getRoleOptions(): array {
-		$roleIds = array_map('intval', $this->rbacreview->getGlobalRoles());
-		$roleIds = array_values(array_unique(array_filter($roleIds, static fn(int $roleId): bool => $roleId > 0)));
-		sort($roleIds);
-
-		$options = array();
-		foreach ($roleIds as $roleId) {
-			$options[] = array(
-				'id' => $roleId,
-				'label' => trim((string)ilObject::_lookupTitle($roleId))
-			);
+	private function csrfToken(): string {
+		if (!$this->session->started()) throw new \RuntimeException('An active ILIAS session is required.');
+		$token = $this->session->get(self::SESSION_CSRF);
+		if (!is_string($token) || strlen($token) !== 64) {
+			$token = bin2hex(random_bytes(32));
+			$this->session->set(self::SESSION_CSRF, $token);
 		}
-
-		return $options;
-	}
-
-	private function getConfigurableGroupNames(): array {
-		$names = array();
-
-		foreach ($this->usermanager->getAllGroups() as $group) {
-			if (!$group instanceof Group) continue;
-
-			$name = trim((string)$group->name);
-			if ($name === '' || $this->isAutomaticGroup($name)) continue;
-
-			$names[] = $name;
-		}
-
-		return array_values(array_unique($names));
-	}
-
-	private function isAutomaticGroup(string $groupName): bool {
-		return in_array($groupName, [
-			Base3IliasUsermanager::GROUP_ANONYMOUS,
-			Base3IliasUsermanager::GROUP_AUTHENTICATED
-		], true);
-	}
-
-	private function normalizeIds(mixed $value): array {
-		$values = is_array($value)
-			? $value
-			: preg_split('/[\s,;]+/', trim((string)$value), -1, PREG_SPLIT_NO_EMPTY);
-
-		if (!is_array($values)) return array();
-
-		$ids = array();
-		foreach ($values as $id) {
-			if (!is_numeric($id) || (int)$id <= 0) continue;
-			$ids[] = (int)$id;
-		}
-
-		$ids = array_values(array_unique($ids));
-		sort($ids);
-
-		return $ids;
-	}
-
-	private function getUserLabels(array $userIds): array {
-		$users = array();
-
-		foreach ($userIds as $userId) {
-			$login = trim((string)ilObjUser::_lookupLogin($userId));
-			$fullname = trim((string)ilObjUser::_lookupFullname($userId));
-			$label = $login;
-
-			if ($fullname !== '') {
-				$label = $label !== '' ? $label . ' · ' . $fullname : $fullname;
-			}
-
-			$users[] = array(
-				'id' => $userId,
-				'label' => $label
-			);
-		}
-
-		return $users;
-	}
-
-	private function buildEndpoint(): string {
-		return $this->linkTargetService->getLink([
-			'name' => self::getName(),
-			'out' => 'html'
-		]);
-	}
-
-	private function loadTranslations(): void {
-		$this->view->setPath(dirname(__DIR__, 2));
-		$this->view->loadBricks('Display');
-
-		$common = $this->view->getBricks('base3ilias_common');
-		$specific = $this->view->getBricks('base3ilias_group_admin_display');
-
-		$this->translations = array_merge(
-			is_array($common) ? $common : [],
-			is_array($specific) ? $specific : []
-		);
-	}
-
-	private function t(string $key, string $fallback): string {
-		$text = trim((string)($this->translations[$key] ?? ''));
-		return $text !== '' ? $text : $fallback;
+		return $token;
 	}
 }

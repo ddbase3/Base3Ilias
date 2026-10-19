@@ -3,6 +3,14 @@
 namespace Base3Ilias;
 
 use Base3\Api\IAssetResolver;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Api\IAuthorizationAdministrationService;
+use Base3\Usermanager\UserCriterionEvaluator;
+use Base3Ilias\Authorization\Base3IliasAuthorizationService;
+use Base3Ilias\Authorization\Base3IliasAuthorizationAdministrationService;
+use Base3Ilias\Service\Base3IliasGroupConfiguration;
+use Base3Ilias\Service\Base3IliasFeatureConfiguration;
+use Base3Ilias\Service\Base3IliasAudienceEditor;
 use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
@@ -131,7 +139,31 @@ class Base3IliasPlugin implements IPlugin {
 				new SessionMiddleware($c->get(ISession::class)),
 				new AccesscontrolMiddleware($c->get(IAccesscontrol::class))
 			])
-			->set(IUsermanager::class, fn($c) => new Base3IliasUsermanager($c->get(ISettingsStore::class)), IContainer::SHARED)
+			->set(Base3IliasFeatureConfiguration::class, fn($c) => new Base3IliasFeatureConfiguration($c->get(ISettingsStore::class), $c->get(UserCriterionEvaluator::class), $c->get(IClassMap::class)), IContainer::SHARED)
+			->set(UserCriterionEvaluator::class, fn($c) => new UserCriterionEvaluator($c->get(IClassMap::class)), IContainer::SHARED)
+			->set(Base3IliasAudienceEditor::class, fn($c) => new Base3IliasAudienceEditor($c->get(IClassMap::class), $c->get(UserCriterionEvaluator::class), $c->get(Container::class)->rbac()->review()), IContainer::SHARED)
+			->set(Base3IliasGroupConfiguration::class, fn($c) => new Base3IliasGroupConfiguration($c->get(ISettingsStore::class), $c->get(IClassMap::class), $c->get(UserCriterionEvaluator::class), $c->get(Base3IliasFeatureConfiguration::class)), IContainer::SHARED)
+			->set(IUsermanager::class, fn($c) => new Base3IliasUsermanager(
+				$c->get(IAccesscontrol::class),
+				$c->get(Container::class)->rbac()->review(),
+				$c->get(UserCriterionEvaluator::class),
+				$c->get(Base3IliasGroupConfiguration::class)
+			), IContainer::SHARED)
+			->set(IAuthorizationService::class, fn($c) => new Base3IliasAuthorizationService(
+				$c->get(IAccesscontrol::class),
+				$c->get(IUsermanager::class),
+				$c->get(IClassMap::class),
+				$c->get(Base3IliasFeatureConfiguration::class),
+				$c->get(UserCriterionEvaluator::class),
+				$c->get(Container::class)->rbac()->system(),
+				$c->get(ILogger::class)
+			), IContainer::SHARED)
+			->set(IAuthorizationAdministrationService::class, fn($c) => new Base3IliasAuthorizationAdministrationService(
+				$c->get(IAuthorizationService::class),
+				$c->get(Container::class)->rbac()->review(),
+				$c->get(Container::class)->rbac()->admin(),
+				$c->get(Container::class)->database()
+			), IContainer::SHARED)
 			->set('usermanager', IUsermanager::class, IContainer::ALIAS)
 			->set(ILanguage::class, fn() => new Base3IliasLanguage(), IContainer::SHARED)
 			->set(ITranslation::class, fn($c) => new Base3IliasTranslation(

@@ -6,6 +6,8 @@ use Base3\Api\IOutput;
 use Base3\Api\IRequest;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3\Usermanager\Permission;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Dto\AuthorizationRequest;
 use Base3Ilias\Api\IBase3IliasSettings;
 
 /**
@@ -17,6 +19,7 @@ final class Base3IliasFileManagerOutput implements IOutput {
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly IUsermanager $usermanager,
+		private readonly IAuthorizationService $authorization,
 		private readonly IBase3IliasSettings $settings,
 		private readonly Base3IliasFileManagerHttpService $fileManagerHttpService
 	) {}
@@ -26,7 +29,7 @@ final class Base3IliasFileManagerOutput implements IOutput {
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
-		if (!$this->usermanager->can(Permission::for('system', 'admin'))) {
+		if (!$this->authorization->decide(new AuthorizationRequest($this->authorization->getDefaultAuthority(), Permission::for('system', 'admin')))->isAllowed()) {
 			return $this->errorResponse(403, 'FileManager access denied.');
 		}
 

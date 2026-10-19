@@ -151,3 +151,29 @@ Feel free to contribute or report issues via GitHub!
 - [Frequently Asked Questions](docs/faq.md)
 - [Privacy and data processing](PRIVACY.md)
 - [ILIAS Resource Storage adapter](docs/ilias-resource-storage.md)
+
+
+## BASE3 groups and feature audiences
+
+The ILIAS-hosted Groups and Features administration surfaces use repeatable
+user/role/criterion or group/user/criterion assignments. Discoverable code groups
+and host-created groups share one effective group view and one criterion evaluator.
+All persistable changes remain in ILIAS-backed settings (not the BASE3 core).
+See [authorization-audiences.md](docs/authorization-audiences.md) for storage,
+access restrictions, versioned migrations, and the `development` navigation rule.
+
+
+### BASE3 group, feature and developer audiences
+
+ILIAS user and role assignments plus discoverable `IUserCriterion`s share one
+audience evaluator for groups and features. A feature can grant access to BASE3
+groups, exact ILIAS users, native ILIAS roles and criteria (OR-composed). Native
+ILIAS permissions remain authoritative for host resources.
+
+Code-owned group criteria are immutable membership; administrators may add
+criteria but cannot remove code-owned members from the UI. Group and Feature
+administration requires both native `system/admin` and BASE3 `development`
+membership, including for direct HTTP requests. The optional `QualitusIlias`
+project plugin owns this project's bootstrap `development` group. Configure a
+exact initial ILIAS login name (or a verified, protected complete email address)
+in that plugin **before** restricting the UI.

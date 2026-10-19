@@ -77,7 +77,7 @@ For the current user or a specifically requested user, the adapter can process:
 - effective role IDs and role titles
 - whether the user holds the ILIAS system administrator role
 
-The adapter also exposes ILIAS operation definitions and can evaluate object-specific permissions against an ILIAS repository `ref_id`.
+The adapter exposes ILIAS operation definitions; the separate `Base3IliasAuthorizationService` delegates authorization decisions for native operations and repository `ref_id` values directly to ILIAS `ilRbacSystem`. A new `Base3IliasAuthorizationAdministrationService` allows a correctly authorized operator to inspect and modify native ILIAS role grants through `ilRbacReview` and `ilRbacAdmin` using host database transactions.
 
 ### 5.1 Derived administrator role
 
@@ -93,11 +93,15 @@ This does not create a second authorization database. It is a runtime mapping of
 
 ### 5.2 Read-only behavior
 
-The reviewed adapter does not write user or RBAC changes back to ILIAS. Its methods for user registration, password changes, role assignments, role revocations and permission mutations return `false`.
+The usermanager adapter does not write native ILIAS users or role assignments: its registration, password and role-mutation methods return `false`. The separate administration service can replace **direct object role grants** after server-side native `edit_permission` validation; it does not edit group memberships or create user accounts.
 
 ### 5.3 Groups
 
-ILIAS group membership is not mapped through this adapter. `getGroups()` and `getAllGroups()` return empty arrays.
+Discoverable `IGroup` and `IUserCriterion` implementations add BASE3-only groups and optional role/user/email-domain membership criteria. These groups do not change native ILIAS user roles or RBAC. Alongside code groups, administrators may create, describe and delete custom BASE3 group DTOs. The ILIAS-backed `ISettingsStore` dataset `base3ilias/groups` contains custom group names/descriptions, user/role IDs and configured membership criterion expressions. Legacy `assignments` were converted by the versioned `Migration001ConvertGroupAssignments`; the runtime does not rewrite old settings.
+
+Feature audiences are stored by `Base3IliasFeatureConfiguration` in the single `base3_authorization_features/catalog` dataset. The new immutable `Migration001ConvertFeatureGrants` converts previous group-name `grants` lists to `rules` expressions. Rules may contain BASE3 group names, ILIAS user IDs, role-based criteria, configured domains such as `qualitus.de`, or other plugin-specific criterion configuration. Feature and group settings may thereby identify individuals or groups of people. The host stores the rules, not a separate BASE3 permission database. Removing a custom group deletes its active settings record only when there is no feature/default reference; historic backups, logs, and native ILIAS users/roles are unaffected. Deletion and corrections of user IDs or domain rules are performed by authorized administrators through the two admin displays. Settings have no source-verified automatic retention period; ILIAS operators control access, retention, backups, deletion and privacy notices.
+
+The group/feature forms use session-backed CSRF tokens, removed when the host session expires. The browser sends these forms directly to the ILIAS-hosted BASE3 endpoint over the existing authenticated connection, and no external recipient is introduced. The shared criterion editor renders labelled controls and AJAX feedback; host deployments remain responsible for testing assistive technologies and for their security/privacy obligations.
 
 ## 6. Request data
 
@@ -505,3 +509,20 @@ For resources created by collection `write()` or `copy()` operations and for sin
 The adapter does not define a general retention period. The calling component remains responsible for persisting and removing its RID or RCID reference. Copying a collection member can create an additional IRSS member resource with the same file content, while copying a container file creates another path inside the same container. Moving a collection or container file writes the target first and removes the source only after the target operation succeeded. Moving a single-file storage changes the current file name while keeping the same RID. Deleting a collection member removes it from that logical collection and asks IRSS to release the Base3Ilias stakeholder. Deleting a single-file resource removes the Base3Ilias stakeholder and only removes the physical IRSS resource when no other stakeholder keeps it in use. Container file and directory deletion changes the content of the existing container resource rather than deleting the container RID itself.
 
 File contents, file names and directory names can contain personal or confidential information. Access to a factory and to the externally managed storage identifier must therefore be restricted to code that is authorized to access the corresponding ILIAS-backed storage area.
+
+### BASE3 feature authorization configuration
+
+The ILIAS adapter stores feature audience expressions in one `base3_authorization_features/catalog` dataset in the active `ISettingsStore`, under `rules`. Group names, feature IDs, native ILIAS user IDs and configured criterion attributes (for example a qualifying email domain, exact user login names or complete email addresses) may be stored together in one administrative update. Arbitrary plugin-specific criteria can contain other fields according to their schemas; assess their privacy impact before enabling them. Passwords are not part of this dataset. The operator determines retention, backups and deletion. A saved empty expression denies the feature; missing settings use the code-defined audience.
+
+
+### Code-defined initial developer identities
+
+The `QualitusIlias` project plugin may store exact ILIAS login names or
+complete email addresses in source-defined `development` group criteria. Host-managed additional group
+criteria use the existing ILIAS settings dataset. The code-owned baseline is
+not overwritten by UI edits, and the two sources are evaluated by the same
+`UserCriterionEvaluator`; they do not create a second persistence backend.
+Affected repositories and deployment backups containing configured identities require
+appropriate access control. Revoking a fixed bootstrap member requires updating
+and redeploying the project source. See the separate `QualitusIlias/PRIVACY.md` project-plugin source
+for the exact bootstrap implementation and its retention limitations.

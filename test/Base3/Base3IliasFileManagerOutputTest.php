@@ -5,6 +5,8 @@ namespace Base3Ilias\Test\Base3;
 use Base3\Api\IRequest;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\Usermanager\Api\IUsermanager;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Dto\AuthorizationDecision;
 use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasChatbotConfigService;
 use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
@@ -21,13 +23,15 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 
 	public function testAnonymousFileManagerRequestIsRejectedBeforeOwnerLookup(): void {
 		$usermanager = $this->createMock(IUsermanager::class);
-		$usermanager->method('can')->willReturn(false);
+		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('decide')->willReturn(AuthorizationDecision::deny());
 		$settings = $this->createMock(IBase3IliasSettings::class);
 		$settings->expects(self::never())->method('getAdministrationConfig');
 
 		$output = new Base3IliasFileManagerOutput(
 			$this->createMock(IRequest::class),
 			$usermanager,
+			$authorization,
 			$settings,
 			$this->unusedHttpService()
 		);
@@ -38,7 +42,8 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 
 	public function testUnconfiguredOwnerIsRejectedEvenForAdministrator(): void {
 		$usermanager = $this->createMock(IUsermanager::class);
-		$usermanager->method('can')->willReturn(true);
+		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('decide')->willReturn(AuthorizationDecision::allow());
 		$request = $this->createMock(IRequest::class);
 		$request->method('get')->willReturnCallback(
 			fn(string $key, $default = null) => ['fm_group' => 'other', 'fm_name' => 'target'][$key] ?? $default
@@ -53,7 +58,7 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 			]]
 		]);
 
-		$output = new Base3IliasFileManagerOutput($request, $usermanager, $settings, $this->unusedHttpService());
+		$output = new Base3IliasFileManagerOutput($request, $usermanager, $authorization, $settings, $this->unusedHttpService());
 
 		self::assertSame(['message' => 'FileManager configuration not found.'], json_decode($output->getOutput('php', true), true));
 		self::assertSame(404, http_response_code());
