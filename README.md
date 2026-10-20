@@ -177,3 +177,7 @@ membership, including for direct HTTP requests. The optional `QualitusIlias`
 project plugin owns this project's bootstrap `development` group. Configure a
 exact initial ILIAS login name (or a verified, protected complete email address)
 in that plugin **before** restricting the UI.
+
+## Shared Groups and Features interfaces
+
+The ILIAS admin navigation now points to the reusable `ClientStack` displays `authorizationgroupsdisplay` and `authorizationfeaturesdisplay`. `Base3IliasAudienceAdministrationAdapter` keeps the native `system/admin` and BASE3 `development` safety boundaries and delegates unchanged to the existing `Base3IliasGroupConfiguration`, `Base3IliasFeatureConfiguration` and `Base3IliasAudienceEditor`. All stored group and feature keys are unchanged. Native ILIAS RBAC is not modified.

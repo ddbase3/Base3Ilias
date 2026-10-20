@@ -11,6 +11,8 @@ use Base3Ilias\Authorization\Base3IliasAuthorizationAdministrationService;
 use Base3Ilias\Service\Base3IliasGroupConfiguration;
 use Base3Ilias\Service\Base3IliasFeatureConfiguration;
 use Base3Ilias\Service\Base3IliasAudienceEditor;
+use Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
+use UiFoundation\Api\IAuthorizationAudienceAdministrationService;
 use Base3\Api\IClassMap;
 use Base3\Api\IContainer;
 use Base3\Api\IMvcView;
@@ -143,6 +145,13 @@ class Base3IliasPlugin implements IPlugin {
 			->set(UserCriterionEvaluator::class, fn($c) => new UserCriterionEvaluator($c->get(IClassMap::class)), IContainer::SHARED)
 			->set(Base3IliasAudienceEditor::class, fn($c) => new Base3IliasAudienceEditor($c->get(IClassMap::class), $c->get(UserCriterionEvaluator::class), $c->get(Container::class)->rbac()->review()), IContainer::SHARED)
 			->set(Base3IliasGroupConfiguration::class, fn($c) => new Base3IliasGroupConfiguration($c->get(ISettingsStore::class), $c->get(IClassMap::class), $c->get(UserCriterionEvaluator::class), $c->get(Base3IliasFeatureConfiguration::class)), IContainer::SHARED)
+			->set(IAuthorizationAudienceAdministrationService::class, fn($c) => new Base3IliasAudienceAdministrationAdapter(
+				$c->get(Base3IliasGroupConfiguration::class),
+				$c->get(Base3IliasFeatureConfiguration::class),
+				$c->get(Base3IliasAudienceEditor::class),
+				$c->get(IClassMap::class),
+				$c->get(IUsermanager::class)
+			), IContainer::SHARED)
 			->set(IUsermanager::class, fn($c) => new Base3IliasUsermanager(
 				$c->get(IAccesscontrol::class),
 				$c->get(Container::class)->rbac()->review(),

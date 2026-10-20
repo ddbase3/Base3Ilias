@@ -43,8 +43,8 @@ transaction and invalidates native RBAC caches. A client cannot write grants mer
 by passing a role ID: server-side `edit_permission`, role protection, type-specific
 operation validation and resource identity are all checked first.
 
-`Base3IliasGroupAdminDisplay` edits **BASE3 group criteria only**, not ILIAS roles.
-`Base3IliasFeatureAdminDisplay` edits discoverable feature group grants. Both use
+`ClientStack\Display\AuthorizationGroupsDisplay` edits **BASE3 group criteria only**, not ILIAS roles.
+`ClientStack\Display\AuthorizationFeaturesDisplay` edits discoverable feature group grants. Both use
 server-side administrator authorization, native ILIAS settings persistence and
 session-protected AJAX forms. The UI exposes fixed code-owned groups as read-only;
 additional groups and criteria can be supplied by project plugins via `IClassMap`.

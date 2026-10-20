@@ -526,3 +526,7 @@ Affected repositories and deployment backups containing configured identities re
 appropriate access control. Revoking a fixed bootstrap member requires updating
 and redeploying the project source. See the separate `QualitusIlias/PRIVACY.md` project-plugin source
 for the exact bootstrap implementation and its retention limitations.
+
+## Authorization administration UI refactor
+
+The shared ClientStack screens do not create another persistence layer. ILIAS group identifiers, user and role criterion IDs, and feature audience expressions continue to be processed and stored solely by the configured ILIAS host services. Access is checked server-side; POST mutations require a session CSRF token. The new UiFoundation interface provides no storage. Retention and erasure continue to follow the host settings backend as previously documented.
