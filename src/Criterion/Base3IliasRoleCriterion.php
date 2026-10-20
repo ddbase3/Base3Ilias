@@ -2,6 +2,7 @@
 
 namespace Base3Ilias\Criterion;
 
+use Base3\Translation\Api\ITranslation;
 use Base3\Usermanager\Api\IUserCriterion;
 use Base3\Usermanager\Role;
 use Base3\Usermanager\User;
@@ -10,12 +11,25 @@ use InvalidArgumentException;
 /** Matches roles provided by native ILIAS user resolution, without recalculating RBAC. */
 final class Base3IliasRoleCriterion implements IUserCriterion {
 
+	public function __construct(private readonly ITranslation $translation) {}
+
 	public static function getName(): string { return 'base3iliasrolecriterion'; }
 
 	public function getSchema(): array {
-		return ['type' => 'object', 'required' => ['role_ids'], 'properties' => [
-			'role_ids' => ['type' => 'array', 'items' => ['type' => 'integer', 'minimum' => 1], 'uniqueItems' => true]
-		], 'additionalProperties' => false];
+		return [
+			'title' => $this->translation->translate('Criterion', 'base3ilias_role_criterion', 'title', 'ILIAS role'),
+			'type' => 'object',
+			'required' => ['role_ids'],
+			'properties' => [
+				'role_ids' => [
+					'title' => $this->translation->translate('Criterion', 'base3ilias_role_criterion', 'role_ids', 'Role IDs'),
+					'type' => 'array',
+					'items' => ['type' => 'integer', 'minimum' => 1],
+					'uniqueItems' => true
+				]
+			],
+			'additionalProperties' => false
+		];
 	}
 
 	public function matches(?User $user, array $config): bool {

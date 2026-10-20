@@ -181,3 +181,8 @@ in that plugin **before** restricting the UI.
 ## Shared Groups and Features interfaces
 
 The ILIAS admin navigation now points to the reusable `ClientStack` displays `authorizationgroupsdisplay` and `authorizationfeaturesdisplay`. `Base3IliasAudienceAdministrationAdapter` keeps the native `system/admin` and BASE3 `development` safety boundaries and delegates unchanged to the existing `Base3IliasGroupConfiguration`, `Base3IliasFeatureConfiguration` and `Base3IliasAudienceEditor`. All stored group and feature keys are unchanged. Native ILIAS RBAC is not modified.
+
+The native ILIAS role criterion owns its localized schema and role-ID field
+titles in `lang/Criterion/{en,de}.ini`, using the existing
+`ITranslation` service. ClientStack does not maintain ILIAS-specific
+criterion labels or translation keys.
