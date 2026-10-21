@@ -79,7 +79,26 @@ For the current user or a specifically requested user, the adapter can process:
 
 The adapter exposes ILIAS operation definitions; the separate `Base3IliasAuthorizationService` delegates authorization decisions for native operations and repository `ref_id` values directly to ILIAS `ilRbacSystem`. A new `Base3IliasAuthorizationAdministrationService` allows a correctly authorized operator to inspect and modify native ILIAS role grants through `ilRbacReview` and `ilRbacAdmin` using host database transactions.
 
-### 5.1 Derived administrator role
+### 5.1 Native user-directory enumeration
+
+`Base3IliasUsermanager::getAllUsers()` retrieves the native ILIAS directory with
+`ilObjUser::_getUsersForFolder(USER_FOLDER_ID, -1)`. It includes active and
+inactive user accounts but excludes anonymous and invalid IDs. The ILIAS
+helper reads `usr_data` and the language preference in `usr_pref`; while the
+native rows include further profile fields, only native ID, login, display
+name, email and language are placed in the returned BASE3 `User` objects.
+Per-user roles are not resolved during enumeration.
+
+All retrieved rows and the projected users remain in PHP process memory for
+the duration of their use. This patch adds no separate user storage, cache,
+background processing, new recipient or external data transfer. Source data,
+retention, deletion, correction and backups remain governed by the ILIAS host
+and its deployment. The method itself performs no authorization decision;
+callers disclosing user-directory information must first check the applicable
+native permissions. This change increases the directory data available to
+BASE3 consumers, so deployments should review and restrict its actual use.
+
+### 5.2 Derived administrator role
 
 For users holding the native ILIAS system administrator role, the adapter derives BASE3 administrator semantics such as:
 
@@ -91,11 +110,11 @@ permission: entry/admin
 
 This does not create a second authorization database. It is a runtime mapping of the ILIAS RBAC state.
 
-### 5.2 Read-only behavior
+### 5.3 Read-only behavior
 
 The usermanager adapter does not write native ILIAS users or role assignments: its registration, password and role-mutation methods return `false`. The separate administration service can replace **direct object role grants** after server-side native `edit_permission` validation; it does not edit group memberships or create user accounts.
 
-### 5.3 Groups
+### 5.4 Groups
 
 Discoverable `IGroup` and `IUserCriterion` implementations add BASE3-only groups and optional role/user/email-domain membership criteria. These groups do not change native ILIAS user roles or RBAC. Alongside code groups, administrators may create, describe and delete custom BASE3 group DTOs. The ILIAS-backed `ISettingsStore` dataset `base3ilias/groups` contains custom group names/descriptions, user/role IDs and configured membership criterion expressions. Legacy `assignments` were converted by the versioned `Migration001ConvertGroupAssignments`; the runtime does not rewrite old settings.
 

@@ -93,6 +93,29 @@ The main goal of **Base3Ilias** is to allow developers to:
 - Usage of already developed BASE3 Plugins like AI tools, chatbot, agent system, reporting, crm, different api connectors and more
 - Expose ILIAS Resource Storage Service resources through the ResourceFoundation file-storage contracts
 
+## Native ILIAS user enumeration (9 to 11)
+
+`Base3IliasUsermanager::getAllUsers()` reads the ILIAS user directory via the
+existing `ilObjUser::_getUsersForFolder(USER_FOLDER_ID, -1)` API. The `-1`
+argument includes active and inactive accounts. Invalid and anonymous user IDs
+are excluded. Each returned BASE3 `User` contains its native ID, login, display
+name, email and language, taken directly from the native bulk rows; missing
+names use the login. Roles are deliberately not resolved for directory entries
+(`roles` is empty, `role` is blank). The existing `getUserById()` path continues
+to provide native roles when an individual user is requested.
+
+This method is **not** an authorization check. Any HTTP endpoint or other
+caller exposing the directory must verify host permissions before sending its
+results to the client. The native method returns all rows in memory; large
+installations should consider this when using it. There is no additional BASE3
+storage or user-directory cache.
+
+A regression test in `test/Base3/Base3IliasUsermanagerGetAllUsersTest.php`
+checks identity projection without defining or replacing any global ILIAS
+classes. Unlike the removed, previously delivered standalone probe, this test
+has no top-level executable statements. Host integration remains to be tested
+on deployed ILIAS 9, 10 and 11 installations.
+
 ## ILIAS database adapter
 
 `Base3IliasDatabase` uses the existing ILIAS database connection. It requires the ILIAS

@@ -144,11 +144,26 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		return false;
 	}
 
-	public function getAllUsers() {
-		$user = $this->getUser();
-		if ($user == null) return array();
+	/**
+	 * Returns native ILIAS user-folder identities without resolving per-user roles.
+	 *
+	 * The native query includes active and inactive accounts in ILIAS 9 to 11.
+	 * This method provides identity data only; callers exposing the directory
+	 * must independently enforce the required host authorization.
+	 *
+	 * @return User[] Native non-anonymous users with ID, login, name, email and language
+	 */
+	public function getAllUsers(): array {
+		$users = array();
 
-		return array($user);
+		foreach (ilObjUser::_getUsersForFolder(USER_FOLDER_ID, -1) as $data) {
+			$userId = (int)($data['usr_id'] ?? 0);
+			if ($userId <= 0 || $this->isAnonymousUser($userId)) continue;
+
+			$users[] = $this->createUser($userId, null, $data);
+		}
+
+		return $users;
 	}
 
 	public function getAllGroups() {
@@ -228,23 +243,42 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		return (int)$id;
 	}
 
-	private function createUser(int $userId, array $roles): User {
-		$name = ilObjUser::_lookupName($userId);
-		$login = ilObjUser::_lookupLogin($userId);
-		$fullname = trim(trim((string)($name['title'] ?? '')) . ' ' . trim((string)($name['firstname'] ?? '')) . ' ' . trim((string)($name['lastname'] ?? '')));
-
-		if ($fullname === '') {
-			$fullname = $login;
+	/**
+	 * Projects native identity fields into a BASE3 user.
+	 *
+	 * The individual lookup path still fetches native roles and profile data.
+	 * Bulk rows already contain the identity fields and do not trigger lookups.
+	 *
+	 * @param int $userId Native ILIAS user ID
+	 * @param array|null $roles Native roles, or null when not resolved for directory entries
+	 * @param array|null $data Native directory row, or null for an individual lookup
+	 * @return User Projected BASE3 identity without additional persistence
+	 */
+	private function createUser(int $userId, ?array $roles, ?array $data = null): User {
+		if ($data === null) {
+			$name = ilObjUser::_lookupName($userId);
+			$data = array(
+				'title' => $name['title'] ?? '',
+				'firstname' => $name['firstname'] ?? '',
+				'lastname' => $name['lastname'] ?? '',
+				'login' => ilObjUser::_lookupLogin($userId),
+				'email' => ilObjUser::_lookupEmail($userId),
+				'language' => ilObjUser::_lookupLanguage($userId)
+			);
 		}
+
+		$login = (string)($data['login'] ?? '');
+		$fullname = trim(trim((string)($data['title'] ?? '')) . ' ' . trim((string)($data['firstname'] ?? '')) . ' ' . trim((string)($data['lastname'] ?? '')));
+		if ($fullname === '') $fullname = $login;
 
 		$user = new User();
 		$user->id = (string)$userId;
 		$user->userid = $login;
 		$user->name = $fullname;
-		$user->email = ilObjUser::_lookupEmail($userId);
-		$user->lang = ilObjUser::_lookupLanguage($userId);
-		$user->role = $this->getCompatibilityRoleName($userId);
-		$user->roles = $roles;
+		$user->email = (string)($data['email'] ?? '');
+		$user->lang = (string)($data['language'] ?? '');
+		$user->role = $roles !== null ? $this->getCompatibilityRoleName($userId) : '';
+		$user->roles = $roles ?? array();
 
 		return $user;
 	}
