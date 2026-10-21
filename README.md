@@ -116,6 +116,33 @@ classes. Unlike the removed, previously delivered standalone probe, this test
 has no top-level executable statements. Host integration remains to be tested
 on deployed ILIAS 9, 10 and 11 installations.
 
+## Native ILIAS user search (9 to 11)
+
+`Base3IliasUsermanager::searchUsers(string $query, int $limit = 20, int $offset = 0): array`
+implements the BASE3 `IUsermanager` search contract for ILIAS 9, 10 and 11.
+It uses the injected native `ilDBInterface` connection to search `usr_data`
+(login, first/last name, concatenated display name, email, or exact numeric ID)
+and to read the language from `usr_pref`. Search terms are literal text, including
+`%`, `_` and `!`, never SQL fragments. Matching is case-insensitive at the
+native database level. Leading/trailing whitespace is ignored. Blank terms
+return an empty list; invalid pagination throws `InvalidArgumentException`.
+
+ILIAS limits and offsets each search before fetching results (1..100 users per
+page), including inactive accounts, ordered by display name and native ID.
+The anonymous account is excluded. Only identity metadata is returned, with
+empty `role`/`roles`; there are no per-user lookups, role expansions or caches.
+`getAllUsers()` and `getUserById()` remain unchanged.
+
+**Security:** `searchUsers()` does not decide directory-read permissions.
+Every caller and HTTP endpoint must explicitly authorize the search with
+`IAuthorizationService` and the appropriate native host rights before returning
+results to a browser. The adapter itself creates no endpoint. The list contains
+personal data, including email addresses; do not publish it anonymously.
+
+No schema migration is required. Install the matching `Base3Framework` update
+that adds `IUsermanager::searchUsers()` before deploying the updated ILIAS
+adapter, and update other host usermanagers before using that framework there.
+
 ## ILIAS database adapter
 
 `Base3IliasDatabase` uses the existing ILIAS database connection. It requires the ILIAS

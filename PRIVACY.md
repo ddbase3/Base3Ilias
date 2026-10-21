@@ -98,6 +98,35 @@ callers disclosing user-directory information must first check the applicable
 native permissions. This change increases the directory data available to
 BASE3 consumers, so deployments should review and restrict its actual use.
 
+### 5.1.1 Native user-directory search
+
+`Base3IliasUsermanager::searchUsers()` accepts a plain-text substring from a
+caller, along with a bounded page size and offset. It queries the existing
+ILIAS `usr_data` table (native ID, login, title, first name, last name and
+email) and joins the `language` value from `usr_pref`. Numeric text may also
+match an exact native user ID. Active and inactive accounts are in scope;
+anonymous identities are excluded. A search can therefore disclose a person's
+email and other directory attributes even where that person is inactive.
+
+The query executes using the existing host database connection. Input is
+parameterized, SQL wildcard characters from input are treated as literal text,
+results are limited before transfer into PHP, and no per-result role or profile
+query is performed. Results are projected into request-local BASE3 `User`
+objects without roles. Queries and result data are not logged or persisted by
+this method. There is no new directory store, cache, search index, cookie,
+external provider or network recipient. Retention, correction, deletion,
+backups and SQL audit logging are governed by the ILIAS database and deployment
+configuration, not by this adapter.
+
+**Access boundary:** This low-level adapter intentionally does not authorize
+which caller may read the directory. The calling service or HTTP endpoint must
+validate its own ILIAS/BASE3 authorization before exposing search results.
+No new HTTP route or user-facing interface is added in this patch. The eventual
+search UI must also enforce server-side authorization, data minimization, rate
+limits appropriate to deployment and accessibility requirements. Exact host
+permissions and operational retention depend on the installing project and
+must be verified there.
+
 ### 5.2 Derived administrator role
 
 For users holding the native ILIAS system administrator role, the adapter derives BASE3 administrator semantics such as:

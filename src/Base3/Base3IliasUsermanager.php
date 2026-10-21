@@ -11,6 +11,7 @@ use Base3\Usermanager\Group;
 use Base3\Usermanager\Permission;
 use Base3\Usermanager\Role;
 use Base3\Usermanager\User;
+use ilDBInterface;
 use ilObject;
 use ilObjUser;
 
@@ -26,7 +27,8 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		private readonly IAccesscontrol $accesscontrol,
 		private readonly \ilRbacReview $rbacreview,
 		private readonly UserCriterionEvaluator $criterionEvaluator,
-		private readonly Base3IliasGroupConfiguration $groupConfiguration
+		private readonly Base3IliasGroupConfiguration $groupConfiguration,
+		private readonly ilDBInterface $database
 	) {}
 
 
@@ -164,6 +166,91 @@ class Base3IliasUsermanager implements IUsermanager, ICheck {
 		}
 
 		return $users;
+	}
+
+
+	/**
+	 * Searches native ILIAS identities with one bounded, parameterized database query.
+	 *
+	 * Includes inactive accounts, but never the anonymous user. Query text is
+	 * matched literally against login, names and email; digits also match an
+	 * exact native user ID. No native profile or RBAC lookups run per result.
+	 *
+	 * @param string $query Plain text, not SQL; surrounding whitespace is ignored
+	 * @param int $limit Maximum page size (1..100)
+	 * @param int $offset Non-negative zero-based result offset
+	 * @return User[] ILIAS identities without resolved role memberships
+	 * @throws \InvalidArgumentException On invalid pagination
+	 * @throws \Throwable If the native ILIAS database query fails
+	 */
+	public function searchUsers(string $query, int $limit = 20, int $offset = 0): array {
+		if ($limit < 1 || $limit > 100 || $offset < 0) {
+			throw new \InvalidArgumentException('User search requires a limit of 1..100 and a non-negative offset.');
+		}
+
+		$query = trim($query);
+		if ($query === '') return [];
+
+		[$sql, $types, $values] = $this->buildSearchUsersStatement($query);
+		$this->database->setLimit($limit, $offset);
+		$result = $this->database->queryF($sql, $types, $values);
+		$users = [];
+
+		try {
+			while ($row = $this->database->fetchAssoc($result)) {
+				$userId = (int)($row['usr_id'] ?? 0);
+				if ($userId <= 0 || $this->isAnonymousUser($userId)) continue;
+				$users[] = $this->createUser($userId, null, $row);
+			}
+		} finally {
+			$this->database->free($result);
+		}
+
+		return $users;
+	}
+
+	/**
+	 * Creates a prepared ILIAS user-directory search with a deterministic order.
+	 *
+	 * ILIAS ilUserQuery covers basic text search, but not the contract's exact
+	 * numeric ID and concatenated display-name matching. This query reads the
+	 * same usr_data/ usr_pref fields as getAllUsers(), with native pagination.
+	 *
+	 * @return array{string, array<int,string>, array<int,string|int>}
+	 */
+	private function buildSearchUsersStatement(string $query): array {
+		// '!' is the explicit SQL LIKE escape character across supported hosts.
+		// Escape it first; '%' and '_' from user input are then literal characters.
+		$pattern = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $query) . '%';
+		$fullName = "CONCAT(COALESCE(u.title, ''), ' ', COALESCE(u.firstname, ''), ' ', COALESCE(u.lastname, ''))";
+		$fields = ['u.login', 'u.firstname', 'u.lastname', $fullName, 'u.email'];
+		$conditions = [];
+		$types = ['text', 'integer'];
+		$values = ['language', defined('ANONYMOUS_USER_ID') ? (int)ANONYMOUS_USER_ID : 13];
+
+		foreach ($fields as $field) {
+			$conditions[] = "LOWER($field) LIKE LOWER(%s) ESCAPE '!'";
+			$types[] = 'text';
+			$values[] = $pattern;
+		}
+
+		// Reject overflow instead of silently casting large numeric text.
+		$numericId = ctype_digit($query)
+			? filter_var(ltrim($query, '0'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+			: false;
+		if ($numericId !== false) {
+			$conditions[] = 'u.usr_id = %s';
+			$types[] = 'integer';
+			$values[] = $numericId;
+		}
+
+		$sql = 'SELECT u.usr_id, u.login, u.title, u.firstname, u.lastname, u.email, p.value AS language'
+			. ' FROM usr_data u'
+			. ' LEFT JOIN usr_pref p ON p.usr_id = u.usr_id AND p.keyword = %s'
+			. ' WHERE u.usr_id != %s AND (' . implode(' OR ', $conditions) . ')'
+			. ' ORDER BY LOWER(' . $fullName . '), u.usr_id';
+
+		return [$sql, $types, $values];
 	}
 
 	public function getAllGroups() {

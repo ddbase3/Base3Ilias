@@ -156,7 +156,8 @@ class Base3IliasPlugin implements IPlugin {
 				$c->get(IAccesscontrol::class),
 				$c->get(Container::class)->rbac()->review(),
 				$c->get(UserCriterionEvaluator::class),
-				$c->get(Base3IliasGroupConfiguration::class)
+				$c->get(Base3IliasGroupConfiguration::class),
+				$c->get(Container::class)->database()
 			), IContainer::SHARED)
 			->set(IAuthorizationService::class, fn($c) => new Base3IliasAuthorizationService(
 				$c->get(IAccesscontrol::class),
