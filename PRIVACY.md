@@ -578,3 +578,11 @@ for the exact bootstrap implementation and its retention limitations.
 ## Authorization administration UI refactor
 
 The shared ClientStack screens do not create another persistence layer. ILIAS group identifiers, user and role criterion IDs, and feature audience expressions continue to be processed and stored solely by the configured ILIAS host services. Access is checked server-side; POST mutations require a session CSRF token. The new UiFoundation interface provides no storage. Retention and erasure continue to follow the host settings backend as previously documented.
+
+### Structured diagnostic runtime binding
+
+The ILIAS BASE3 runtime registers the framework `IDiagnosticRunner` backed by the existing class map. This only makes installed read-only diagnostic implementations discoverable. No checks are executed during bootstrap and no diagnostic results are stored by this binding. When an administrative endpoint invokes a check, the endpoint remains responsible for native authorization and for controlling access to the returned in-memory result.
+
+### General database-log diagnostic
+
+`Base3LogRetentionDiagnosticCheck` may query the optional `base3_log` table for an aggregate count of rows older than the configured retention period plus 24 hours. It also reads the cleanup job's enabled state. It does not retrieve or disclose individual log messages, user identities or raw log records and performs no deletion. `Base3LogRetention` shares the existing cleanup configuration and timestamp predicate semantics with the existing nightly job; the retention and cleanup implementation remain owned by Base3Ilias. Results can appear in the protected BASE3 diagnostics UI and in the user-initiated JSON clipboard export provided by ClientStack. This does not cover native ILIAS, PHP or web-server logs or provider-held records.

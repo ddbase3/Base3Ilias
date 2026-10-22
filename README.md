@@ -236,3 +236,11 @@ The native ILIAS role criterion owns its localized schema and role-ID field
 titles in `lang/Criterion/{en,de}.ini`, using the existing
 `ITranslation` service. ClientStack does not maintain ILIAS-specific
 criterion labels or translation keys.
+
+### Structured diagnostics
+
+The ILIAS runtime now binds the framework's `IDiagnosticRunner` to `DiagnosticRunner`, using the existing `IClassMap`. The runner can be used by installed modules independently of ClientStack and performs no checks during bootstrap. Access to the administration UI and AJAX execution is authorized by the calling display; the runner itself does not make permission decisions or store results.
+
+## General BASE3 log retention diagnostic
+
+`Base3LogRetentionDiagnosticCheck` is a read-only `IDiagnosticCheck` in the privacy scope. It inspects the optional `base3_log` table and uses exactly the cleanup job's `base3logcleanupjob.active` setting and `base3ilias.job.base3logcleanup.retention_hours` state value. The nightly `Base3LogCleanupJob` and the diagnostic use `Base3LogRetention` as their common owner for retention values, cutoff formatting and schema existence. The default retention is 48 hours; the diagnostic checks rows older than retention plus 24 hours to allow the nightly job to execute. A disabled cleanup job reports failure even if no rows are overdue, provided the table exists. Missing tables report `not_applicable`; database problems yield `error`. Only counts are returned. The check never deletes logs.

@@ -28,10 +28,6 @@ final class Base3LogCleanupJob implements IPolicyControlledJob {
 
 	use PolicyControlledJobTrait;
 
-	private const STATE_PREFIX = 'base3ilias.job.base3logcleanup.';
-
-	private const DEFAULT_RETENTION_HOURS = 48;
-	private const DEFAULT_DELETE_BATCH = 100000;
 	private const DEFAULT_PRIORITY = 1;
 
 	private ?array $missionbayIliasConf = null;
@@ -47,8 +43,7 @@ final class Base3LogCleanupJob implements IPolicyControlledJob {
 	}
 
 	public function isActive() {
-		$conf = $this->getMissionbayIliasConf();
-		return ((int)($conf['base3logcleanupjob.active'] ?? 0)) === 1;
+		return Base3LogRetention::isCleanupActive($this->getMissionbayIliasConf());
 	}
 
 	public function getPriority() {
@@ -72,13 +67,13 @@ final class Base3LogCleanupJob implements IPolicyControlledJob {
 			return 'DB not connected';
 		}
 
-		if (!$this->logTableExists()) {
+		if (!Base3LogRetention::tableExists($this->db)) {
 			return 'Skip (base3_log does not exist)';
 		}
 
-		$retentionHours = $this->getRetentionHours();
-		$deleteBatch = $this->getDeleteBatch();
-		$cutoff = $this->cutoffSqlString($retentionHours);
+		$retentionHours = Base3LogRetention::retentionHours($this->state);
+		$deleteBatch = Base3LogRetention::deleteBatch($this->state);
+		$cutoff = Base3LogRetention::cutoffSqlString($retentionHours);
 
 		$this->deleteOldLogs($cutoff, $deleteBatch);
 
@@ -104,37 +99,6 @@ final class Base3LogCleanupJob implements IPolicyControlledJob {
 			ORDER BY id ASC
 			LIMIT " . (int)$limit
 		);
-	}
-
-	/* ---------- Retention / config ---------- */
-
-	private function getRetentionHours(): int {
-		$raw = $this->state->get($this->stateKey('retention_hours'), self::DEFAULT_RETENTION_HOURS);
-		$hours = (int)$raw;
-		return $hours > 0 ? $hours : self::DEFAULT_RETENTION_HOURS;
-	}
-
-	private function getDeleteBatch(): int {
-		$raw = $this->state->get($this->stateKey('delete_batch'), self::DEFAULT_DELETE_BATCH);
-		$batch = (int)$raw;
-		return $batch > 0 ? $batch : self::DEFAULT_DELETE_BATCH;
-	}
-
-	private function cutoffSqlString(int $retentionHours): string {
-		$cutoffTs = time() - ($retentionHours * 3600);
-		return date('Y-m-d H:i:s', $cutoffTs);
-	}
-
-	private function stateKey(string $suffix): string {
-		return self::STATE_PREFIX . $suffix;
-	}
-
-	/* ---------- Table existence ---------- */
-
-	private function logTableExists(): bool {
-		// Works on MySQL/MariaDB. If your DB layer uses a different backend, adjust here.
-		$row = $this->db->singleQuery("SHOW TABLES LIKE 'base3_log'");
-		return !empty($row);
 	}
 
 	/* ---------- DB helpers ---------- */

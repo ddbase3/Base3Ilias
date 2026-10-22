@@ -3,6 +3,8 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Api\IClassMap;
+use Base3\Diagnostics\Api\IDiagnosticRunner;
+use Base3\Diagnostics\DiagnosticRunner;
 use Base3\Api\IComponentResolver;
 use Base3\Api\IContainer;
 use Base3\Api\IModuleRegistry;
@@ -97,6 +99,7 @@ class Base3IliasRuntime {
 			->set(IHookManager::class, fn() => new HookManager(), ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set('classmap', IClassMap::class, IContainer::ALIAS)
+			->set(IDiagnosticRunner::class, fn($c) => new DiagnosticRunner($c->get(IClassMap::class)), IContainer::SHARED)
                         ->set(IComponentResolver::class, fn($c) => new ComponentResolver($c->get(IContainer::class), $c->get(IClassMap::class)), IContainer::SHARED)
 			->set(IMigrationRunner::class, fn() => new NoMigrationRunner(), IContainer::SHARED)
 			->set(IServiceSelector::class, fn() => new StandardServiceSelector($servicelocator), IContainer::SHARED)
