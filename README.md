@@ -244,3 +244,13 @@ The ILIAS runtime now binds the framework's `IDiagnosticRunner` to `DiagnosticRu
 ## General BASE3 log retention diagnostic
 
 `Base3LogRetentionDiagnosticCheck` is a read-only `IDiagnosticCheck` in the privacy scope. It inspects the optional `base3_log` table and uses exactly the cleanup job's `base3logcleanupjob.active` setting and `base3ilias.job.base3logcleanup.retention_hours` state value. The nightly `Base3LogCleanupJob` and the diagnostic use `Base3LogRetention` as their common owner for retention values, cutoff formatting and schema existence. The default retention is 48 hours; the diagnostic checks rows older than retention plus 24 hours to allow the nightly job to execute. A disabled cleanup job reports failure even if no rows are overdue, provided the table exists. Missing tables report `not_applicable`; database problems yield `error`. Only counts are returned. The check never deletes logs.
+
+## Native ILIAS application events (ILIAS 10+)
+
+The native ILIAS component owns `component.xml` subscriptions and its `classes/class.il<Component>AppEventListener.php`. The component delegates received events to `Base3Ilias\Ilias\ApplicationEventDispatcher::handleEvent($component, $name, $parameters)`. The dispatcher boots the common BASE3 runtime for that ILIAS request and fires `Base3Ilias\Event\IliasApplicationEvent` over the existing `Base3\Event\Api\IEventManager`.
+
+`Base3IliasRuntime` registers the event manager before initializing the plugins. This lets arbitrary BASE3 plugins subscribe independently during their own `init()` without depending on one another. `Base3Ilias` does not depend on any individual event consumer. The original source identifier, event name and parameters are preserved for consumers. The dispatcher does not store an event history or implement a secondary event bus.
+
+For `components/Base3/`, `Base3IliasLabHost` is the native event receiver. For the Qualitus layout, `components/Qualitus/Base3Core` is the native event receiver. **Only one host wrapper should subscribe on a deployment.** Updating the reusable module alone does not make ILIAS subscribe to new event sources: update the active native component XML and its existing event-listener method as part of the same deployment. The native component event handler must retain its original user-lifecycle behavior. ILIAS 9 remains supported by its UIHook integration; no ILIAS 9 event receiver is added for indexing, so the index inventory job continues to provide consistency.
+
+Native events are optional acceleration signals, not a guarantee that every content or role change was emitted. Consumers such as MissionBayIlias must provide authoritative periodic reconciliation.

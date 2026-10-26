@@ -23,7 +23,6 @@ use Base3\ConfigValue\Api\IConfigValueResolver;
 use Base3\ConfigValue\Resolver\ConfigValueResolver;
 use Base3\Database\Api\IDatabase;
 use Base3\Event\Api\IEventManager;
-use Base3\Event\EventManager;
 use Base3\Logger\Api\ILogger;
 use Base3\Migration\Api\IMigrationRunner;
 use Base3\Migration\Database\DatabaseMigrationRunner;
@@ -190,7 +189,6 @@ class Base3IliasPlugin implements IPlugin {
 				fn($c) => new Base3IliasRichTextEditorDisplay($c->get(IMvcView::class)),
 				IContainer::SHARED
 			)
-			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IAssetResolver::class, fn($c) => new Base3IliasAssetResolver(
 				$c->get(ISystemService::class),
 				$c->get(Base3IliasModuleRegistry::class)

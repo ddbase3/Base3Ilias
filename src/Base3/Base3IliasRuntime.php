@@ -16,6 +16,8 @@ use Base3\Core\Autoloader;
 use Base3\Core\ComponentResolver;
 use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
+use Base3\Event\Api\IEventManager;
+use Base3\Event\EventManager;
 use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use Base3\Hook\HookManager;
 use Base3\Hook\Api\IHookListener;
@@ -96,6 +98,7 @@ class Base3IliasRuntime {
 			->set(Base3IliasModuleRegistry::class, self::getBase3ModuleRegistry(), IContainer::SHARED)
 			->set(IModuleRegistry::class, fn() => new Base3IliasModuleRegistryService(self::getBase3ModuleRegistry()), IContainer::SHARED)
 			->set(IRequest::class, $request, IContainer::SHARED)
+			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED)
 			->set(IHookManager::class, fn() => new HookManager(), ServiceLocator::SHARED)
 			->set(IClassMap::class, new Base3IliasClassMap($servicelocator), IContainer::SHARED)
 			->set('classmap', IClassMap::class, IContainer::ALIAS)
