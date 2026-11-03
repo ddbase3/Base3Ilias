@@ -13,13 +13,14 @@ provides the implementation on top of ILIAS's active `ISettingsStore`.
 
 ## Groups: code and user-created
 
-Code-owned groups implement `IGroup` and are discovered with `IClassMap`. The shipped
-`administration`, `anonymous`, `authenticated`, `presentation` and
-`testing` groups are separate classes. The `development` group in the ILIAS 11
-project is owned by the optional `QualitusIlias` project plugin; it must not
-be defined a second time by `Base3Ilias`. `anonymous` and `authenticated` are immutable
-code definitions; the other built-ins expose editable criteria. Any criteria supplied
-by an `IGroup` implementation are **fixed**; host-managed criteria add members with OR
+Code-owned groups implement `IGroup` and are discovered with `IClassMap`.
+`Base3Framework` owns the immutable `anonymous` and `authenticated` definitions.
+`Base3Ilias` defines only the ILIAS-specific groups `administration`,
+`presentation` and `testing`, with editable criteria. The `development` group in
+this ILIAS project is owned by the `QualitusIlias` project plugin. Each logical
+group name must have exactly one code owner, independent of which plugins are
+installed together. Any criteria supplied by an `IGroup` implementation are
+**fixed**; host-managed criteria add members with OR
 and never replace the code-owned membership. The group UI displays fixed criteria
 read-only, separately from editable additions. A project plugin can
 contribute more code groups or predicates without a settings record.

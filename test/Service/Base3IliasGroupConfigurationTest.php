@@ -5,8 +5,12 @@ namespace Base3Ilias\Test\Service;
 use Base3\Api\IClassMap;
 use Base3\Settings\Api\ISettingsStore;
 use Base3\Usermanager\Api\IGroup;
+use Base3\Usermanager\Definition\Base3AnonymousGroup;
+use Base3\Usermanager\Definition\Base3AuthenticatedGroup;
 use Base3\Usermanager\UserCriterionEvaluator;
 use Base3Ilias\Group\Base3IliasAdministrationGroup;
+use Base3Ilias\Group\Base3IliasPresentationGroup;
+use Base3Ilias\Group\Base3IliasTestingGroup;
 use Base3Ilias\Service\Base3IliasFeatureConfiguration;
 use Base3Ilias\Service\Base3IliasGroupConfiguration;
 use PHPUnit\Framework\TestCase;
@@ -46,6 +50,33 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 		$config = $this->configuration($store);
 		$config->create('marketing', 'Marketing team');
 		self::assertContains('marketing', array_map(static fn($g): string => $g->name, $config->getGroups()));
+	}
+
+	public function testFrameworkAndIliasGroupDefinitionsHaveUniqueNames(): void {
+		$store = $this->createMock(ISettingsStore::class);
+		$store->method('get')->willReturn([]);
+		$map = $this->createMock(IClassMap::class);
+		$map->method('getInstancesByInterface')->willReturn([
+			new Base3AnonymousGroup(),
+			new Base3AuthenticatedGroup(),
+			new Base3IliasAdministrationGroup(),
+			new Base3IliasPresentationGroup(),
+			new Base3IliasTestingGroup()
+		]);
+		$groups = $this->configuration($store, $map)->getGroups();
+		self::assertSame(['administration', 'anonymous', 'authenticated', 'presentation', 'testing'],
+			array_map(static fn($group): string => $group->name, $groups));
+	}
+
+	public function testDuplicateCodeGroupNameIsRejected(): void {
+		$store = $this->createMock(ISettingsStore::class);
+		$map = $this->createMock(IClassMap::class);
+		$map->method('getInstancesByInterface')->willReturn([
+			new Base3AnonymousGroup(),
+			new Base3AnonymousGroup()
+		]);
+		$this->expectException(\InvalidArgumentException::class);
+		$this->configuration($store, $map)->getDefinitions();
 	}
 
 	public function testCodeOwnedGroupCannotBeShadowed(): void {

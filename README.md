@@ -221,7 +221,10 @@ groups, exact ILIAS users, native ILIAS roles and criteria (OR-composed). Native
 ILIAS permissions remain authoritative for host resources.
 
 Code-owned group criteria are immutable membership; administrators may add
-criteria but cannot remove code-owned members from the UI. Group and Feature
+criteria but cannot remove code-owned members from the UI. The framework owns
+`anonymous` and `authenticated`; Base3Ilias owns `administration`, `testing` and
+`presentation`; the ILIAS project plugin QualitusIlias owns `development`.
+Only one implementation of each logical group name may be installed. Group and Feature
 administration requires both native `system/admin` and BASE3 `development`
 membership, including for direct HTTP requests. The optional `QualitusIlias`
 project plugin owns this project's bootstrap `development` group. Configure a
