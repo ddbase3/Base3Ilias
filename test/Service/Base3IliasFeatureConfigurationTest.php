@@ -9,6 +9,8 @@ use Base3\Usermanager\UserCriterionEvaluator;
 use Base3Ilias\Service\Base3IliasFeatureConfiguration;
 use PHPUnit\Framework\TestCase;
 
+
+require_once __DIR__ . '/Base3IliasFeatureConfigurationTestFixture1.php';
 final class Base3IliasFeatureConfigurationTest extends TestCase {
 
 	public function testEmptyHostOverrideNeverRestoresCodeDefaults(): void {
@@ -66,12 +68,6 @@ final class Base3IliasFeatureConfigurationTest extends TestCase {
 	}
 
 	private function feature(): IFeature {
-		return new class implements IFeature {
-			public static function getName(): string { return 'testauthorizationfeature'; }
-			public function getLabel(): string { return 'Test'; }
-			public function getDescription(): string { return 'Test feature'; }
-			public function getPermissions(): array { return []; }
-			public function getDefaultAudience(): array { return ['group' => 'authenticated']; }
-		};
+		return new Base3IliasFeatureConfigurationTestFixture1();
 	}
 }

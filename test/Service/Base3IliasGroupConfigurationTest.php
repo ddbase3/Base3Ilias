@@ -15,6 +15,8 @@ use Base3Ilias\Service\Base3IliasFeatureConfiguration;
 use Base3Ilias\Service\Base3IliasGroupConfiguration;
 use PHPUnit\Framework\TestCase;
 
+
+require_once __DIR__ . '/Base3IliasGroupConfigurationTestFixture1.php';
 final class Base3IliasGroupConfigurationTest extends TestCase {
 
 	public function testLegacyGroupAssignmentsNeedExplicitMigration(): void {
@@ -103,16 +105,13 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 			'criterion' => 'base3useridcriterion', 'config' => ['user_ids' => [84]]
 		]]]);
 		$map = $this->createMock(IClassMap::class);
-		$group = new class implements IGroup {
-			public static function getName(): string { return 'bootstrapdevelopmenttestgroup'; }
-			public function getGroup(): \Base3\Usermanager\Group {
-				return \Base3\Usermanager\Group::fromArray(['id' => 'development', 'name' => 'development', 'info' => 'Test', 'archive' => 0, 'roles' => []]);
-			}
-			public function getCriteria(): array { return ['criterion' => 'base3useridentitycriterion', 'config' => ['usernames' => ['developer-login']]]; }
-			public function isEditable(): bool { return true; }
-		};
+		$group = new Base3IliasGroupConfigurationTestFixture1();
 		$map->method('getInstancesByInterface')->willReturn([$group]);
-		$map->method('getInstanceByInterfaceName')->willReturnCallback(static fn(string $api, string $name) => $name === 'base3useridcriterion' ? new \Base3\Usermanager\Criterion\Base3UserIdCriterion() : null);
+		$map->method('getInstanceByInterfaceName')->willReturnCallback(static fn(string $api, string $name) => match($name) {
+			'base3useridcriterion' => new \Base3\Usermanager\Criterion\Base3UserIdCriterion(),
+			'base3useridentitycriterion' => new \Base3\Usermanager\Criterion\Base3UserIdentityCriterion(),
+			default => null
+		});
 		$config = $this->configuration($store, $map);
 		$entry = $config->getEntries()[0];
 		self::assertSame('development', $entry['group']->name);
@@ -134,7 +133,10 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 	}
 
 	private function configuration(ISettingsStore $store, ?IClassMap $map = null): Base3IliasGroupConfiguration {
-		$map ??= $this->createMock(IClassMap::class);
+		if ($map === null) {
+			$map = $this->createStub(IClassMap::class);
+			$map->method('getInstancesByInterface')->willReturn([]);
+		}
 		$evaluator = new UserCriterionEvaluator($map);
 		return new Base3IliasGroupConfiguration($store, $map, $evaluator, new Base3IliasFeatureConfiguration($store, $evaluator, $map));
 	}

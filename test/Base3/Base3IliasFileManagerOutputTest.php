@@ -24,6 +24,7 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 	public function testAnonymousFileManagerRequestIsRejectedBeforeOwnerLookup(): void {
 		$usermanager = $this->createMock(IUsermanager::class);
 		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('getDefaultAuthority')->willReturn('ilias');
 		$authorization->method('decide')->willReturn(AuthorizationDecision::deny());
 		$settings = $this->createMock(IBase3IliasSettings::class);
 		$settings->expects(self::never())->method('getAdministrationConfig');
@@ -43,6 +44,7 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 	public function testUnconfiguredOwnerIsRejectedEvenForAdministrator(): void {
 		$usermanager = $this->createMock(IUsermanager::class);
 		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('getDefaultAuthority')->willReturn('ilias');
 		$authorization->method('decide')->willReturn(AuthorizationDecision::allow());
 		$request = $this->createMock(IRequest::class);
 		$request->method('get')->willReturnCallback(

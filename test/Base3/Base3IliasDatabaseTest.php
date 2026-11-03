@@ -7,6 +7,8 @@ use ilDBPdoInterface;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+
+require_once __DIR__ . '/Base3IliasDatabaseTestFixture1.php';
 final class Base3IliasDatabaseTest extends TestCase {
 
 	private bool $hadDic = false;
@@ -86,14 +88,7 @@ final class Base3IliasDatabaseTest extends TestCase {
 	}
 
 	private function createAdapter(ilDBPdoInterface $db): Base3IliasDatabase {
-		$GLOBALS['DIC'] = new class($db) {
-
-			public function __construct(private readonly ilDBPdoInterface $database) {}
-
-			public function database(): ilDBPdoInterface {
-				return $this->database;
-			}
-		};
+		$GLOBALS['DIC'] = new Base3IliasDatabaseTestFixture1($db);
 
 		return new Base3IliasDatabase();
 	}
