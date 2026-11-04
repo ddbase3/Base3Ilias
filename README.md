@@ -257,3 +257,111 @@ The native ILIAS component owns `component.xml` subscriptions and its `classes/c
 For `components/Base3/`, `Base3IliasLabHost` is the native event receiver. For the Qualitus layout, `components/Qualitus/Base3Core` is the native event receiver. **Only one host wrapper should subscribe on a deployment.** Updating the reusable module alone does not make ILIAS subscribe to new event sources: update the active native component XML and its existing event-listener method as part of the same deployment. The native component event handler must retain its original user-lifecycle behavior. ILIAS 9 remains supported by its UIHook integration; no ILIAS 9 event receiver is added for indexing, so the index inventory job continues to provide consistency.
 
 Native events are optional acceleration signals, not a guarantee that every content or role change was emitted. Consumers such as MissionBayIlias must provide authoritative periodic reconciliation.
+
+## Unit tests
+
+The `test/` directory contains focused PHPUnit tests for the BASE3 and ILIAS host
+adapters, including the module registry, asset and translation resolution,
+configuration and display metadata, file-management validation, authorization
+boundaries, state storage, log retention and versioned settings migrations.
+The filesystem fixtures use temporary module roots and clean up their own files.
+Database-facing tests use `IDatabase` mocks and do not modify ILIAS tables.
+
+The `test/Display/` suites exercise all nine ILIAS administration displays. They
+cover localized configuration and secret masking, health checks for files,
+directories and executable tools, dashboard status and log-file selection,
+structured log parsing and capped log tails, error-log file containment and
+read limits, request parameter redaction, missing user and object handling,
+native role mapping, rendering contracts and endpoint generation. Filesystem
+fixtures are temporary and are removed after each test. Tests that need native
+ILIAS classes such as `ilIniFile`, `ilTree` and `ilRbacReview` are skipped when
+those classes are unavailable, while framework-only checks remain executable
+independently. No real ILIAS user, role, repository entry or database record is
+modified.
+
+The `test/Service/` suites also exercise the four audience and settings services:
+form validation and complex criterion round-trips, discovered feature and group
+catalogs, immutable code-owned membership, legacy migration boundaries, nested
+group references, atomic validation before writes and administrative entry points.
+These tests use isolated settings and class-map doubles; no ILIAS groups, roles or
+database records are changed.
+
+Tests use PHPUnit APIs shared by **11.5** (the ILIAS test runner) and **12.5**
+(standalone BASE3). Run them through the active host's existing PHPUnit
+configuration and autoloader. In the ILIAS project, the repository's
+`make test` target runs the configured suite; its coverage target requires an
+installed PHP coverage driver.
+
+The ILIAS-specific bootstrap, RBAC, storage and other host integrations still
+require the real host runtime for end-to-end validation. A successful syntax
+check or isolated PHP smoke test is not a substitute for a successful PHPUnit
+run or an instrumented code- and class-coverage report.
+
+### BASE3 service-adapter unit tests
+
+The additional `test/Base3/` cases exercise request snapshot capture and restoration,
+GET/POST source precedence, JSON and nested parameter handling, managed file
+storage descriptors and settings/factory delegation, storage traversal rejection,
+upload chunk and identifier validation, database-unavailable errors, service
+locator precedence, session and authentication boundaries, host language and
+configuration URL resolution, and safe usermanager operations. Test fixtures
+preserve and restore modified PHP superglobals, including when their original
+value was `null`. No test creates an ILIAS user, changes permissions, or writes
+to a native resource storage area.
+
+Adapter tests that require active ILIAS resource storage or bootstrap remain
+host-dependent. The tests are written against PHPUnit 11.5 and 12.5 APIs,
+but coverage percentages must be measured using a compatible PHP coverage
+driver in each target environment. Isolated local checks cannot replace either
+full host test suite.
+
+### Additional BASE3 adapter coverage
+
+The adapter tests under `test/Base3/` also exercise `Base3IliasBootstrap`,
+`Base3IliasFileStorageFactory`, `Base3IliasFileStorageStakeholder`,
+`Base3IliasFileStorage`, `Base3IliasManagedFileStorageService`,
+`Base3IliasFileManagerHttpService`, `Base3IliasTranslation`,
+`Base3IliasClassMap`, `Base3IliasRuntime` and the native user role catalog.
+These cases verify resource identification and type validation, IRSS collection
+membership and mutations, managed owner creation, copy and deletion,
+configuration and catalog lookup, class discovery, file-manager endpoint input,
+HTTP JSON status handling and restored process globals. Mocked IRSS and host
+services prevent writes to native ILIAS repositories or user/role data.
+
+`Base3IliasFileManagerHttpResponseTest` executes each response in a separate
+PHP CLI process because the real response method terminates with `exit`.
+The test host must permit PHP CLI subprocess execution for this test class.
+The remaining tests use the active ILIAS/BASE3 test autoloader and PHPUnit
+mocks; no alternate production service, permission path, or storage model is
+introduced. Temporary filesystem fixtures and modified globals are restored.
+
+Run the complete suite with the installed PHPUnit 11.5 (ILIAS) or 12.5
+(standalone BASE3) and generate a **new instrumented** line/class coverage
+report. Counts of test methods or classes named in test files are not coverage
+percentages. In particular, native ILIAS filesystem and ResourceStorage API
+behaviour must be verified on each supported host version.
+
+### Additional plugin, authorization, ILIAS component and external container tests
+
+The `test/Base3IliasPluginRegistrationTest.php` suite exercises the real
+`Base3IliasPlugin::init()` registration path, canonical BASE3 services, host
+container registration, aliases, ownership flags and the native file-storage
+factory. The `test/Authorization/` suites exercise native authorization and
+administration boundaries, including subject validation, ILIAS RBAC delegation,
+create-object type requirements, feature audiences, batch preloading, native
+rights catalog filtering and denial before write operations. They use mock
+ILIAS RBAC services and do not modify the native rights database.
+
+The `test/Ilias/` suites exercise component-root discovery, client artifact
+cleanup and symlink safety, module asset contributions, component initialization
+and application-event forwarding. All temporary directories and modified
+runtime globals or static fields are restored. The
+`test/External/IliasPsrContainerTest.php` suite verifies PSR container
+lookup, missing services and delegation to the native ILIAS container.
+
+Run the tests with the host's existing PHPUnit setup (11.5 for ILIAS or 12.5
+for a compatible standalone installation). The native host and its classes
+must be present for the ILIAS-dependent suites. These tests use only PHPUnit
+APIs common to both supported PHPUnit versions. The module's line and class
+coverage must be measured with the actual host test runner and a PHP coverage
+driver; local isolated checks are not a substitute for that measurement.

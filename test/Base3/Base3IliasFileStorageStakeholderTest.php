@@ -40,4 +40,26 @@ final class Base3IliasFileStorageStakeholderTest extends TestCase {
 		$stakeholder = new Base3IliasFileStorageStakeholder();
 		self::assertSame((int)$DIC->user()->getId(), $stakeholder->getOwnerOfNewResources());
 	}
+	public function testResourceOwnershipAndConsumerIdentityStayStable(): void {
+		$hadDic = array_key_exists('DIC', $GLOBALS);
+		$previousDic = $GLOBALS['DIC'] ?? null;
+		unset($GLOBALS['DIC']);
+
+		try {
+			$stakeholder = new Base3IliasFileStorageStakeholder();
+			$identification = (new \ReflectionClass(\ILIAS\ResourceStorage\Identification\ResourceIdentification::class))
+				->newInstanceWithoutConstructor();
+			$owner = defined('SYSTEM_USER_ID') ? (int) SYSTEM_USER_ID : 6;
+
+			self::assertSame('base3ilias_file_storage', $stakeholder->getId());
+			self::assertSame('BASE3 ILIAS File Storage', $stakeholder->getConsumerNameForPresentation());
+			self::assertTrue($stakeholder->isResourceInUse($identification));
+			self::assertSame($owner, $stakeholder->getOwnerOfResource($identification));
+			self::assertSame($owner, $stakeholder->getOwnerOfNewResources());
+		} finally {
+			if ($hadDic) $GLOBALS['DIC'] = $previousDic;
+			else unset($GLOBALS['DIC']);
+		}
+	}
+
 }
