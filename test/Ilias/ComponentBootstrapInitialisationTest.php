@@ -66,12 +66,12 @@ final class ComponentBootstrapInitialisationTest extends TestCase {
 		$flag = new ReflectionProperty(ComponentBootstrap::class, 'artifactsCleaned');
 		$original = $flag->getValue();
 		try {
-			$flag->setValue(false);
+			$flag->setValue(null, false);
 			$define = $implement = $use = $seek = $provide = $pull = [];
 			$bootstrap->init($component, $define, $implement, $use, $contribute, $seek, $provide, $pull, $internal);
 		}
 		finally {
-			$flag->setValue($original);
+			$flag->setValue(null, $original);
 		}
 	}
 

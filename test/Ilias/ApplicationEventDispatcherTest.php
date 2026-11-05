@@ -64,13 +64,13 @@ final class ApplicationEventDispatcherTest extends TestCase {
 		$previousBooted = $booted->getValue();
 		$previousLocator = $serviceLocator->getValue();
 		try {
-			$booted->setValue(true);
-			$serviceLocator->setValue($locator);
+			$booted->setValue(null, true);
+			$serviceLocator->setValue(null, $locator);
 			$action();
 		}
 		finally {
-			$serviceLocator->setValue($previousLocator);
-			$booted->setValue($previousBooted);
+			$serviceLocator->setValue(null, $previousLocator);
+			$booted->setValue(null, $previousBooted);
 		}
 	}
 }

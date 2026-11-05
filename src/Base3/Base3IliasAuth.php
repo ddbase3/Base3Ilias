@@ -16,7 +16,7 @@ class Base3IliasAuth extends AbstractAuth {
 
         // Implementation of IAuthentication
 
-	public function login() {
+	public function login(?array $credentials = null) {
 		$userId = $this->ilAuthSession->getUserId();
 		return $userId == 13 ? null : $userId;
         }

@@ -91,7 +91,7 @@ final class ComponentBootstrapFilesystemTest extends TestCase {
 		$flag = new ReflectionProperty(ComponentBootstrap::class, 'artifactsCleaned');
 		$original = $flag->getValue();
 		try {
-			$flag->setValue(false);
+			$flag->setValue(null, false);
 			$this->invoke($bootstrap, 'clearArtifactsOnCliInit');
 			self::assertDirectoryExists($artifacts);
 			self::assertSame(['.', '..'], scandir($artifacts));
@@ -101,7 +101,7 @@ final class ComponentBootstrapFilesystemTest extends TestCase {
 			self::assertFileExists($artifacts . '/after-first-call');
 		}
 		finally {
-			$flag->setValue($original);
+			$flag->setValue(null, $original);
 		}
 	}
 

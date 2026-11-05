@@ -287,8 +287,11 @@ These tests use isolated settings and class-map doubles; no ILIAS groups, roles 
 database records are changed.
 
 Tests use PHPUnit APIs shared by **11.5** (the ILIAS test runner) and **12.5**
-(standalone BASE3). Run them through the active host's existing PHPUnit
-configuration and autoloader. In the ILIAS project, the repository's
+(standalone BASE3). The ILIAS test runner uses `tools/test-bootstrap.php` to
+register the discovered BASE3 modules' `src/` and `test/` namespaces with the
+existing ILIAS Composer loader before running tests. It uses the existing
+`Base3IliasModuleRegistry` for module paths and does not change the production
+BASE3 autoloader or the standalone PHPUnit bootstrap. The repository's
 `make test` target runs the configured suite; its coverage target requires an
 installed PHP coverage driver.
 
@@ -365,3 +368,7 @@ must be present for the ILIAS-dependent suites. These tests use only PHPUnit
 APIs common to both supported PHPUnit versions. The module's line and class
 coverage must be measured with the actual host test runner and a PHP coverage
 driver; local isolated checks are not a substitute for that measurement.
+
+### PHPUnit test hygiene
+
+The component bootstrap, event dispatcher, runtime and plugin-registration tests restore static test state using `ReflectionProperty::setValue(null, $value)` for compatibility with recent PHP versions. The file-storage stakeholder tests use controlled ILIAS container and user mocks, including the system-owner path when the user service is absent. Neither test path requires a logged-in native ILIAS user.

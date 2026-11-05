@@ -15,12 +15,12 @@ final class Base3IliasRuntimeEnvironmentTest extends TestCase {
 		$property = new ReflectionProperty(Base3IliasRuntime::class, 'serviceLocator');
 		$original = $property->getValue();
 		try {
-			$property->setValue(null);
+			$property->setValue(null, null);
 			$this->expectException(RuntimeException::class);
 			$this->expectExceptionMessage('runtime not booted');
 			Base3IliasRuntime::getServiceLocator();
 		} finally {
-			$property->setValue($original);
+			$property->setValue(null, $original);
 		}
 	}
 
@@ -29,10 +29,10 @@ final class Base3IliasRuntimeEnvironmentTest extends TestCase {
 		$original = $property->getValue();
 		try {
 			$locator = $this->createMock(Base3IliasServiceLocator::class);
-			$property->setValue($locator);
+			$property->setValue(null, $locator);
 			self::assertSame($locator, Base3IliasRuntime::getServiceLocator());
 		} finally {
-			$property->setValue($original);
+			$property->setValue(null, $original);
 		}
 	}
 

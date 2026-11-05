@@ -53,7 +53,6 @@ final class Base3IliasPluginRegistrationTest extends TestCase {
 			IStateStore::class,
 			ISettingsStore::class,
 			IFileStorageFactory::class,
-			IManagedFileStorageService::class,
 			Base3IliasManagedFileStorageService::class,
 			Base3IliasFileUploadService::class,
 			Base3IliasFileManagerHttpService::class,
@@ -174,7 +173,7 @@ final class Base3IliasPluginRegistrationTest extends TestCase {
 			(new Base3IliasPlugin($container))->init();
 		}
 		finally {
-			$repositoryResolver->setValue($previousResolver);
+			$repositoryResolver->setValue(null, $previousResolver);
 			if ($hadNativeContainer) $GLOBALS['DIC'] = $previousNativeContainer;
 			else unset($GLOBALS['DIC']);
 		}

@@ -31,15 +31,47 @@ final class Base3IliasFileStorageStakeholderTest extends TestCase {
 		}
 	}
 
-	public function testOwnerMatchesCurrentIliasUserWhenAvailable(): void {
-		global $DIC;
-		if (!$DIC instanceof Container || !$DIC->isDependencyAvailable('user')) {
-			self::markTestSkipped('An initialized ILIAS user is required for this test.');
-		}
+	public function testOwnerMatchesUserFromNativeContainer(): void {
+		$previousDicExists = array_key_exists('DIC', $GLOBALS);
+		$previousDic = $GLOBALS['DIC'] ?? null;
 
-		$stakeholder = new Base3IliasFileStorageStakeholder();
-		self::assertSame((int)$DIC->user()->getId(), $stakeholder->getOwnerOfNewResources());
+		$user = $this->createMock(\ilObjUser::class);
+		$user->method('getId')->willReturn(417);
+		$dic = $this->createMock(Container::class);
+		$dic->method('isDependencyAvailable')->with('user')->willReturn(true);
+		$dic->method('user')->willReturn($user);
+
+		try {
+			$GLOBALS['DIC'] = $dic;
+			$stakeholder = new Base3IliasFileStorageStakeholder();
+			self::assertSame(417, $stakeholder->getOwnerOfNewResources());
+			$identification = (new \ReflectionClass(\ILIAS\ResourceStorage\Identification\ResourceIdentification::class))
+				->newInstanceWithoutConstructor();
+			self::assertSame(417, $stakeholder->getOwnerOfResource($identification));
+		} finally {
+			if ($previousDicExists) $GLOBALS['DIC'] = $previousDic;
+			else unset($GLOBALS['DIC']);
+		}
 	}
+
+	public function testMissingUserDependencyUsesSystemOwnerWithNativeContainer(): void {
+		$previousDicExists = array_key_exists('DIC', $GLOBALS);
+		$previousDic = $GLOBALS['DIC'] ?? null;
+
+		$dic = $this->createMock(Container::class);
+		$dic->method('isDependencyAvailable')->with('user')->willReturn(false);
+		$dic->expects(self::never())->method('user');
+
+		try {
+			$GLOBALS['DIC'] = $dic;
+			$stakeholder = new Base3IliasFileStorageStakeholder();
+			self::assertSame(defined('SYSTEM_USER_ID') ? (int) SYSTEM_USER_ID : 6, $stakeholder->getOwnerOfNewResources());
+		} finally {
+			if ($previousDicExists) $GLOBALS['DIC'] = $previousDic;
+			else unset($GLOBALS['DIC']);
+		}
+	}
+
 	public function testResourceOwnershipAndConsumerIdentityStayStable(): void {
 		$hadDic = array_key_exists('DIC', $GLOBALS);
 		$previousDic = $GLOBALS['DIC'] ?? null;

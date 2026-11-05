@@ -30,10 +30,10 @@ final class Base3IliasBootstrapTest extends TestCase {
 		}
 
 		try {
-			$properties['booted']->setValue(true);
-			$properties['serviceLocator']->setValue($locator);
-			$properties['finishDispatched']->setValue(true);
-			$properties['standaloneRequestSnapshot']->setValue(null);
+			$properties['booted']->setValue(null, true);
+			$properties['serviceLocator']->setValue(null, $locator);
+			$properties['finishDispatched']->setValue(null, true);
+			$properties['standaloneRequestSnapshot']->setValue(null, null);
 
 			$bootstrap = new Base3IliasBootstrap();
 			self::assertInstanceOf(IBootstrap::class, $bootstrap);
@@ -48,7 +48,7 @@ final class Base3IliasBootstrapTest extends TestCase {
 			self::assertSame('BASE3 dispatch result', $output);
 		} finally {
 			foreach ($properties as $name => $property) {
-				$property->setValue($original[$name]);
+				$property->setValue(null, $original[$name]);
 			}
 		}
 	}

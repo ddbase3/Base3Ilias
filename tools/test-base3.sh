@@ -61,9 +61,10 @@ for arg in "$@"; do
 done
 
 cache_dir="${TMPDIR:-/tmp}/base3-phpunit-$(printf '%s' "$ilias_root" | sha256sum | cut -c1-16)"
+export BASE3_ILIAS_TEST_ROOT="$ilias_root"
 exec php "${php_args[@]}" vendor/composer/vendor/bin/phpunit \
     -c "$(dirname "$script_dir")/phpunit.xml" \
-    --bootstrap "$ilias_root/vendor/composer/vendor/autoload.php" \
+    --bootstrap "$script_dir/test-bootstrap.php" \
     --cache-directory "$cache_dir" \
     "${coverage_filters[@]}" \
     "$@" \
