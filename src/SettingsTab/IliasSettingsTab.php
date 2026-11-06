@@ -16,6 +16,6 @@ final class IliasSettingsTab extends AbstractSettingsTab {
 	}
 
 	public function getOrder(): int {
-		return 15;
+		return 5;
 	}
 }
