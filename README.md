@@ -372,3 +372,8 @@ driver; local isolated checks are not a substitute for that measurement.
 ### PHPUnit test hygiene
 
 The component bootstrap, event dispatcher, runtime and plugin-registration tests restore static test state using `ReflectionProperty::setValue(null, $value)` for compatibility with recent PHP versions. The file-storage stakeholder tests use controlled ILIAS container and user mocks, including the system-owner path when the user service is absent. Neither test path requires a logged-in native ILIAS user.
+
+
+## Plugin-owned ILIAS settings
+
+The ILIAS Tools administration UI uses `ClientStack\Display\SettingsDisplay` with classmap-discovered `ISettingsTab` entries. `Base3Ilias/src/SettingsTab/` contributes the nine native ILIAS system displays. Every direct ILIAS display call requires both the tab feature and native `system/admin` authorization. `Base3IliasFileManagerOutput` recognizes only the project-composed, feature-visible `chatbotconfigsettingstab` owner (`uihk-chatbot/default`). The old `IBase3IliasSettings` service and its static list are retired; run the removal script supplied with the joint patch.

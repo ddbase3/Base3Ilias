@@ -3,12 +3,14 @@
 namespace Base3Ilias\Base3;
 
 use Base3\Api\IOutput;
+use Base3\Api\IClassMap;
+use UiFoundation\Api\ISettingsTab;
+use Chatbot\SettingsTab\ChatbotconfigSettingsTab;
 use Base3\Api\IRequest;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3\Usermanager\Permission;
 use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Authorization\Dto\AuthorizationRequest;
-use Base3Ilias\Api\IBase3IliasSettings;
 
 /**
  * Exposes the existing ILIAS-managed FileManager HTTP service through normal
@@ -20,7 +22,7 @@ final class Base3IliasFileManagerOutput implements IOutput {
 		private readonly IRequest $request,
 		private readonly IUsermanager $usermanager,
 		private readonly IAuthorizationService $authorization,
-		private readonly IBase3IliasSettings $settings,
+		private readonly IClassMap $classmap,
 		private readonly Base3IliasFileManagerHttpService $fileManagerHttpService
 	) {}
 
@@ -62,28 +64,18 @@ final class Base3IliasFileManagerOutput implements IOutput {
 	}
 
 	private function isConfiguredOwner(string $group, string $name): bool {
-		foreach ($this->settings->getAdministrationConfig() as $tab) {
-			if (!is_array($tab)) {
-				continue;
-			}
-
-			foreach ($tab['displays'] ?? [] as $display) {
-				if (!is_array($display)) {
-					continue;
-				}
-
-				$data = $display['data'] ?? null;
-				if (!is_array($data) || empty($data['resources']['enabled'])) {
-					continue;
-				}
-
-				if (($data['group'] ?? null) === $group && ($data['name'] ?? null) === $name) {
-					return true;
-				}
-			}
+		$tab = $this->classmap->getInstanceByInterfaceName(
+			ISettingsTab::class, ChatbotconfigSettingsTab::getName()
+		);
+		if (!$tab instanceof ISettingsTab || !$tab->isVisible()) {
+			return false;
 		}
 
-		return false;
+		$data = $tab->getDisplayData();
+		return is_array($data)
+			&& ($data['resources']['enabled'] ?? false) === true
+			&& ($data['group'] ?? null) === $group
+			&& ($data['name'] ?? null) === $name;
 	}
 
 	private function errorResponse(int $status, string $message): string {

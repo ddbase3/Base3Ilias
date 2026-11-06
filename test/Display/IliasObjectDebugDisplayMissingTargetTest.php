@@ -3,6 +3,8 @@
 namespace Base3Ilias\Test\Display;
 
 use Base3Ilias\Display\IliasObjectDebugDisplay;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Dto\AuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -74,6 +76,10 @@ final class IliasObjectDebugDisplayMissingTargetTest extends TestCase {
 		(new \ReflectionProperty(IliasObjectDebugDisplay::class, 'request'))->setValue($display, $request);
 		(new \ReflectionProperty(IliasObjectDebugDisplay::class, 'linkTargetService'))->setValue($display, $links);
 		(new \ReflectionProperty(IliasObjectDebugDisplay::class, 'view'))->setValue($display, $view);
+		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('getDefaultAuthority')->willReturn('ilias');
+		$authorization->method('decide')->willReturn(AuthorizationDecision::allow());
+		(new \ReflectionProperty(IliasObjectDebugDisplay::class, 'settingsAuthorization'))->setValue($display, $authorization);
 		self::assertSame('rendered', $display->getOutput());
 		self::assertSame(0, $assignments['targetRefId']);
 		self::assertSame('base3_object_ref_id', $assignments['targetParamName']);

@@ -3,6 +3,8 @@
 namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
+use Base3\Authorization\Api\IAuthorizationService;
+use UiFoundation\Settings\SettingsAdministrationAccess;
 use Base3\Api\IMvcView;
 use Base3\Api\IRequest;
 use Base3\LinkTarget\Api\ILinkTargetService;
@@ -21,7 +23,8 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 		private readonly IRequest $request,
 		private readonly IMvcView $view,
 		private readonly ILinkTargetService $linkTargetService,
-		private readonly ilIniFile $ilIliasIniFile
+		private readonly ilIniFile $ilIliasIniFile,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string {
@@ -39,6 +42,13 @@ final class IliasErrorLogAdminDisplay implements IDisplay {
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!SettingsAdministrationAccess::isAllowed(
+			$this->settingsAuthorization, \Base3Ilias\SettingsTab\IliaserrorlogadminSettingsTab::getName()
+		)) {
+			http_response_code(403);
+			return '';
+		}
+
 		$this->loadTranslations();
 		$out = strtolower((string)$out);
 

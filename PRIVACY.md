@@ -590,3 +590,7 @@ The ILIAS BASE3 runtime registers the framework `IDiagnosticRunner` backed by th
 ## Native application-event forwarding
 
 On ILIAS 10+ hosts configured with a native component event receiver, `Base3Ilias\Ilias\ApplicationEventDispatcher` passes the native component identifier, event name and original parameter array into the existing in-memory BASE3 `IEventManager`. Payloads may contain ILIAS object IDs, role IDs, user IDs and other ILIAS-owned fields, depending on the native source. The dispatcher adds no event archive, separate database, queue, external recipient or retention mechanism. Registered downstream plugins may process an event according to their own responsibilities, which must be documented separately. Event-handler failures may be sent to the configured application error log without logging the raw event payload. Host log retention and access controls remain deployment-specific.
+
+### Settings integration (November 2026)
+
+Native ILIAS administration displays now enforce host system administrator rights and per-display BASE3 feature grants before reading configuration, logs, user identities or RBAC details. The ILIAS FileManager retains its managed storage backend and only accepts the configured chatbot resources owner.

@@ -3,6 +3,8 @@
 namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
+use Base3\Authorization\Api\IAuthorizationService;
+use UiFoundation\Settings\SettingsAdministrationAccess;
 use Base3\Api\IMvcView;
 use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use Base3\LinkTarget\Api\ILinkTargetService;
@@ -16,7 +18,8 @@ final class IliasSystemHealthDisplay implements IDisplay {
 		private readonly IMvcView $view,
 		private readonly ILinkTargetService $linkTargetService,
 		private readonly ilIniFile $ilIliasIniFile,
-		private readonly Base3IliasModuleRegistry $moduleRegistry
+		private readonly Base3IliasModuleRegistry $moduleRegistry,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string {
@@ -34,6 +37,13 @@ final class IliasSystemHealthDisplay implements IDisplay {
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!SettingsAdministrationAccess::isAllowed(
+			$this->settingsAuthorization, \Base3Ilias\SettingsTab\IliassystemhealthSettingsTab::getName()
+		)) {
+			http_response_code(403);
+			return '';
+		}
+
 		$this->loadTranslations();
 		$sections = $this->getSections();
 

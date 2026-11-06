@@ -3,6 +3,8 @@
 namespace Base3Ilias\Display;
 
 use Base3\Api\IDisplay;
+use Base3\Authorization\Api\IAuthorizationService;
+use UiFoundation\Settings\SettingsAdministrationAccess;
 use Base3\Api\IMvcView;
 use ilCtrl;
 
@@ -12,7 +14,8 @@ final class IliasRequestDebugDisplay implements IDisplay {
 
 	public function __construct(
 		private readonly IMvcView $view,
-		private readonly ilCtrl $ilCtrl
+		private readonly ilCtrl $ilCtrl,
+		private readonly IAuthorizationService $settingsAuthorization
 	) {}
 
 	public static function getName(): string {
@@ -30,6 +33,13 @@ final class IliasRequestDebugDisplay implements IDisplay {
 	}
 
 	public function getOutput(string $out = 'html', bool $final = false): string {
+		if (!SettingsAdministrationAccess::isAllowed(
+			$this->settingsAuthorization, \Base3Ilias\SettingsTab\IliasrequestdebugSettingsTab::getName()
+		)) {
+			http_response_code(403);
+			return '';
+		}
+
 		$this->loadTranslations();
 		$this->view->setTemplate('Display/IliasRequestDebugDisplay.php');
 

@@ -3,11 +3,15 @@
 namespace Base3Ilias\Test\Base3;
 
 use Base3\Api\IRequest;
+use Base3\Api\IClassMap;
+use Base3\Authorization\Dto\AuthorizationRequest;
+use Base3\Usermanager\Permission;
 use Base3\Configuration\Api\IConfiguration;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3\Authorization\Api\IAuthorizationService;
 use Base3\Authorization\Dto\AuthorizationDecision;
-use Base3Ilias\Api\IBase3IliasSettings;
+use Chatbot\SettingsTab\ChatbotconfigSettingsTab;
+use UiFoundation\Api\ISettingsTab;
 use Base3Ilias\Base3\Base3IliasChatbotConfigService;
 use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
 use Base3Ilias\Base3\Base3IliasFileManagerOutput;
@@ -26,14 +30,14 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 		$authorization = $this->createMock(IAuthorizationService::class);
 		$authorization->method('getDefaultAuthority')->willReturn('ilias');
 		$authorization->method('decide')->willReturn(AuthorizationDecision::deny());
-		$settings = $this->createMock(IBase3IliasSettings::class);
-		$settings->expects(self::never())->method('getAdministrationConfig');
+		$classmap = $this->createMock(IClassMap::class);
+		$classmap->expects(self::never())->method('getInstanceByInterfaceName');
 
 		$output = new Base3IliasFileManagerOutput(
 			$this->createMock(IRequest::class),
 			$usermanager,
 			$authorization,
-			$settings,
+			$classmap,
 			$this->unusedHttpService()
 		);
 
@@ -50,17 +54,18 @@ final class Base3IliasFileManagerOutputTest extends TestCase {
 		$request->method('get')->willReturnCallback(
 			fn(string $key, $default = null) => ['fm_group' => 'other', 'fm_name' => 'target'][$key] ?? $default
 		);
-		$settings = $this->createMock(IBase3IliasSettings::class);
-		$settings->method('getAdministrationConfig')->willReturn([
-			['displays' => [
-				['name' => 'chatbotconfigdisplay', 'data' => [
-					'group' => 'uihk-chatbot', 'name' => 'default',
-					'resources' => ['enabled' => true]
-				]]
-			]]
+		$tab = $this->createMock(ISettingsTab::class);
+		$tab->method('isVisible')->willReturn(true);
+		$tab->method('getDisplayData')->willReturn([
+			'group' => 'uihk-chatbot', 'name' => 'default',
+			'resources' => ['enabled' => true]
 		]);
+		$classmap = $this->createMock(IClassMap::class);
+		$classmap->method('getInstanceByInterfaceName')->with(
+			ISettingsTab::class, ChatbotconfigSettingsTab::getName()
+		)->willReturn($tab);
 
-		$output = new Base3IliasFileManagerOutput($request, $usermanager, $authorization, $settings, $this->unusedHttpService());
+		$output = new Base3IliasFileManagerOutput($request, $usermanager, $authorization, $classmap, $this->unusedHttpService());
 
 		self::assertSame(['message' => 'FileManager configuration not found.'], json_decode($output->getOutput('php', true), true));
 		self::assertSame(404, http_response_code());

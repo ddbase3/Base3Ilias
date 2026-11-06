@@ -20,7 +20,6 @@ use Base3\Settings\Api\ISettingsStore;
 use Base3\State\Api\IStateStore;
 use Base3\Translation\Api\ITranslation;
 use Base3\Usermanager\Api\IUsermanager;
-use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasChatbotConfigService;
 use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
 use Base3Ilias\Base3\Base3IliasFileStorageFactory;
@@ -69,7 +68,6 @@ final class Base3IliasPluginRegistrationTest extends TestCase {
 			IMvcView::class,
 			IAssetResolver::class,
 			IRichTextEditorDisplay::class,
-			IBase3IliasSettings::class,
 			IConfigValueResolver::class,
 			'workers', 'middlewares', 'authentications'
 		] as $name) {
@@ -101,7 +99,7 @@ final class Base3IliasPluginRegistrationTest extends TestCase {
 		$entries = $this->registrations();
 		foreach ([
 			ILogger::class, ISettingsStore::class, IFileStorageFactory::class,
-			ITranslation::class, IBase3IliasSettings::class,
+			ITranslation::class,
 			IConfigValueResolver::class, 'authentications'
 		] as $service) {
 			self::assertSame(

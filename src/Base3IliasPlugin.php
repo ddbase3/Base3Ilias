@@ -38,7 +38,6 @@ use Base3\State\Api\IStateStore;
 use Base3\Translation\Api\ITranslation;
 use Base3\Usermanager\Api\IUsermanager;
 use Base3\Worker\DelegateWorker;
-use Base3Ilias\Api\IBase3IliasSettings;
 use Base3Ilias\Base3\Base3IliasAssetResolver;
 use Base3Ilias\Base3\Base3IliasAuth;
 use Base3Ilias\Base3\Base3IliasConfiguration;
@@ -53,7 +52,6 @@ use Base3Ilias\Base3\Base3IliasLanguage;
 use Base3Ilias\Base3\Base3IliasLogger;
 use Base3Ilias\Base3\Base3IliasRichTextEditorDisplay;
 use Base3Ilias\Base3\Base3IliasSession;
-use Base3Ilias\Base3\Base3IliasSettings;
 use Base3Ilias\Base3\Base3IliasStateStore;
 use Base3Ilias\Base3\Base3IliasTranslation;
 use Base3Ilias\Base3\Base3IliasUsermanager;
@@ -193,7 +191,6 @@ class Base3IliasPlugin implements IPlugin {
 				$c->get(ISystemService::class),
 				$c->get(Base3IliasModuleRegistry::class)
 			), IContainer::SHARED)
-			->set(IBase3IliasSettings::class, fn($c) => new Base3IliasSettings($c->get(ITranslation::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(IConfigValueResolver::class, fn($c) => new ConfigValueResolver($c->get(IClassMap::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set('workers', fn($c) => [
 				'Base3Ilias' => fn() => new DelegateWorker($c->get(IClassMap::class), $c->get(IConfiguration::class))

@@ -3,6 +3,8 @@
 namespace Base3Ilias\Test\Display;
 
 use Base3Ilias\Display\IliasConfigAdminDisplay;
+use Base3\Authorization\Api\IAuthorizationService;
+use Base3\Authorization\Dto\AuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -94,7 +96,10 @@ final class IliasConfigAdminDisplayMaskingTest extends TestCase {
 			'log.file' => 'ilias.log',
 			default => '',
 		});
-		$display = new IliasConfigAdminDisplay($view, $ini);
+		$authorization = $this->createMock(IAuthorizationService::class);
+		$authorization->method('getDefaultAuthority')->willReturn('ilias');
+		$authorization->method('decide')->willReturn(AuthorizationDecision::allow());
+		$display = new IliasConfigAdminDisplay($view, $ini, $authorization);
 		self::assertSame('rendered', $display->getOutput());
 		self::assertCount(7, $assigned['sections']);
 		self::assertSame('Localized server', $assigned['sections'][0]['title']);
