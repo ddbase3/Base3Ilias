@@ -377,3 +377,7 @@ The component bootstrap, event dispatcher, runtime and plugin-registration tests
 ## Plugin-owned ILIAS settings
 
 The ILIAS Tools administration UI uses `ClientStack\Display\SettingsDisplay` with classmap-discovered `ISettingsTab` entries. `Base3Ilias/src/SettingsTab/` contributes the nine native ILIAS system displays. Every direct ILIAS display call requires both the tab feature and native `system/admin` authorization. `Base3IliasFileManagerOutput` recognizes only the project-composed, feature-visible `chatbotconfigsettingstab` owner (`uihk-chatbot/default`). The old `IBase3IliasSettings` service and its static list are retired; run the removal script supplied with the joint patch.
+
+## Native mode notices
+
+`IModeInfoProvider` is a discoverable description of one native ILIAS mode notice. It does not store or publish identity data. The actual feature owner supplies the notice, and the existing ILIAS UIHook registers the single native layout provider.

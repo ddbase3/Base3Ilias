@@ -594,3 +594,7 @@ On ILIAS 10+ hosts configured with a native component event receiver, `Base3Ilia
 ### Settings integration (November 2026)
 
 Native ILIAS administration displays now enforce host system administrator rights and per-display BASE3 feature grants before reading configuration, logs, user identities or RBAC details. The ILIAS FileManager retains its managed storage backend and only accepts the configured chatbot resources owner.
+
+## Native mode notices
+
+`IModeInfoProvider` is a discoverable description of one native ILIAS mode notice. It does not store or publish identity data. The actual feature owner supplies the notice, and the existing ILIAS UIHook registers the single native layout provider.
