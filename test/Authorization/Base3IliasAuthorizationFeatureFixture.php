@@ -1,9 +1,24 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Authorization;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Authorization\Api\IFeature;
-use Base3\Usermanager\Permission;
+
+namespace Base3\Base3Ilias\Test\Authorization;
+
+use Base3\CoreFoundation\Authorization\Api\IFeature;
+use Base3\CoreFoundation\Usermanager\Permission;
 
 final class Base3IliasAuthorizationFeatureFixture implements IFeature {
 

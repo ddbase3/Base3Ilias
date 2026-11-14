@@ -1,10 +1,25 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Ilias;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
+
+
+namespace Base3\Base3Ilias\Test\Ilias;
 
 use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
 use Base3\Base3Ilias\Base3IliasPublicAsset;
-use Base3Ilias\Ilias\ComponentBootstrap;
+use Base3\Base3Ilias\Ilias\ComponentBootstrap;
 use ILIAS\Component\Component;
 use ILIAS\Component\Resource\PublicAsset;
 use PHPUnit\Framework\TestCase;

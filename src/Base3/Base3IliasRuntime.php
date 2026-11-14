@@ -1,36 +1,52 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Diagnostics\Api\IDiagnosticRunner;
-use Base3\Diagnostics\DiagnosticRunner;
-use Base3\Api\IComponentResolver;
-use Base3\Api\IContainer;
-use Base3\Api\IModuleRegistry;
-use Base3\Api\IPlugin;
-use Base3\Api\IRequest;
-use Base3\Api\ISystemService;
-use Base3\Configuration\Api\IConfiguration;
-use Base3\Core\Autoloader;
+
+namespace Base3\Base3Ilias\Base3;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Diagnostics\Api\IDiagnosticRunner;
+use Base3\Core\Diagnostics\DiagnosticRunner;
+use Base3\CoreFoundation\Api\IComponentResolver;
+use Base3\CoreFoundation\Api\IContainer;
+use Base3\CoreFoundation\Api\IModuleRegistry;
+use Base3\CoreFoundation\Api\IPlugin;
+use Base3\CoreFoundation\Api\IRequest;
+use Base3\CoreFoundation\Api\ISystemService;
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
 use Base3\Core\ComponentResolver;
 use Base3\Core\Request;
 use Base3\Core\ServiceLocator;
-use Base3\Event\Api\IEventManager;
-use Base3\Event\EventManager;
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\Core\Event\EventManager;
 use Base3\Base3Ilias\Base3IliasModuleRegistry;
-use Base3\Hook\HookManager;
-use Base3\Hook\Api\IHookListener;
-use Base3\Hook\Api\IHookManager;
-use Base3\LinkTarget\Api\ILinkTargetService;
-use Base3\Migration\Api\IMigrationRunner;
-use Base3\Migration\No\NoMigrationRunner;
-use Base3\ServiceSelector\Api\IServiceSelector;
-use Base3\ServiceSelector\Standard\StandardServiceSelector;
-use Base3Ilias\External\IliasPsrContainer;
+use Base3\Core\Hook\HookManager;
+use Base3\CoreFoundation\Hook\Api\IHookListener;
+use Base3\CoreFoundation\Hook\Api\IHookManager;
+use Base3\CoreFoundation\LinkTarget\Api\ILinkTargetService;
+use Base3\CoreFoundation\Migration\Api\IMigrationRunner;
+use Base3\Core\Migration\No\NoMigrationRunner;
+use Base3\CoreFoundation\ServiceSelector\Api\IServiceSelector;
+use Base3\Core\ServiceSelector\Standard\StandardServiceSelector;
+use Base3\Base3Ilias\External\IliasPsrContainer;
 use RuntimeException;
 use XapiProxy\ilInitialisation;
 use ilContext;
+
+require_once dirname(__DIR__, 2) . '/classes/Base3IliasModuleRegistry.php';
 
 class Base3IliasRuntime {
 
@@ -71,7 +87,6 @@ class Base3IliasRuntime {
 		}
 
 		self::configureDebug();
-		self::registerBase3Autoloader();
 
 		if (self::$standaloneRequestSnapshot !== null) {
 			/**
@@ -263,7 +278,7 @@ class Base3IliasRuntime {
 		if (!defined('DIR_TMP')) define('DIR_TMP', DIR_BASE3_ARTIFACTS);
 		if (!defined('DIR_LOCAL')) define('DIR_LOCAL', DIR_BASE3_DATA);
 
-		$frameworkRoot = self::getBase3ModuleRegistry()->requireModulePath('Base3Framework');
+		$frameworkRoot = self::getBase3ModuleRegistry()->requireModulePath('Core');
 		if (!defined('DIR_FRAMEWORK')) define('DIR_FRAMEWORK', rtrim($frameworkRoot, '/\\') . DIRECTORY_SEPARATOR);
 		if (!defined('DIR_SRC')) define('DIR_SRC', DIR_FRAMEWORK . 'src' . DIRECTORY_SEPARATOR);
 		if (!defined('DIR_TEST')) define('DIR_TEST', DIR_FRAMEWORK . 'test' . DIRECTORY_SEPARATOR);
@@ -339,26 +354,6 @@ class Base3IliasRuntime {
 		// Fatal errors must remain visible in the server log outside debug mode.
 		$fatalErrors = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR;
 		error_reporting($enabled ? E_ALL | E_STRICT : $fatalErrors);
-	}
-
-	protected static function registerBase3Autoloader(): void {
-		$autoloaderFile = DIR_SRC . 'Core/Autoloader.php';
-		if (!is_file($autoloaderFile)) {
-			throw new RuntimeException('Base3 autoloader not found: ' . $autoloaderFile);
-		}
-
-		require_once $autoloaderFile;
-		Autoloader::register();
-
-		foreach (self::getBase3Modules() as $name => $module) {
-			if ($name === 'Base3Framework') continue;
-
-			$srcPath = self::resolveBase3ModulePath($module) . DIRECTORY_SEPARATOR . 'src';
-			if (!is_dir($srcPath)) continue;
-
-			$namespace = rtrim((string) $module['namespace'], '\\') . '\\';
-			Autoloader::registerPlugin($namespace, rtrim($srcPath, '/\\') . DIRECTORY_SEPARATOR);
-		}
 	}
 
 	public static function getBase3ModuleRegistry(): Base3IliasModuleRegistry {

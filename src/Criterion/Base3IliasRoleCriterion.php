@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Criterion;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Translation\Api\ITranslation;
-use Base3\Usermanager\Api\IUserCriterion;
-use Base3\Usermanager\Role;
-use Base3\Usermanager\User;
+
+namespace Base3\Base3Ilias\Criterion;
+
+use Base3\CoreFoundation\Translation\Api\ITranslation;
+use Base3\CoreFoundation\Usermanager\Api\IUserCriterion;
+use Base3\CoreFoundation\Usermanager\Role;
+use Base3\CoreFoundation\Usermanager\User;
 use InvalidArgumentException;
 
 /** Matches roles provided by native ILIAS user resolution, without recalculating RBAC. */

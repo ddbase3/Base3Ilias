@@ -1,14 +1,29 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Service;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Translation\Api\ITranslation;
-use Base3\Usermanager\Criterion\Base3EmailDomainCriterion;
-use Base3\Usermanager\Criterion\Base3UserIdCriterion;
-use Base3\Usermanager\UserCriterionEvaluator;
-use Base3Ilias\Criterion\Base3IliasRoleCriterion;
-use Base3Ilias\Service\Base3IliasAudienceEditor;
+
+namespace Base3\Base3Ilias\Test\Service;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Translation\Api\ITranslation;
+use Base3\Core\Usermanager\Criterion\Base3EmailDomainCriterion;
+use Base3\Core\Usermanager\Criterion\Base3UserIdCriterion;
+use Base3\Core\Usermanager\UserCriterionEvaluator;
+use Base3\Base3Ilias\Criterion\Base3IliasRoleCriterion;
+use Base3\Base3Ilias\Service\Base3IliasAudienceEditor;
 use PHPUnit\Framework\TestCase;
 
 final class Base3IliasAudienceEditorTest extends TestCase {
@@ -57,7 +72,7 @@ final class Base3IliasAudienceEditorTest extends TestCase {
 	public function testCriteriaCatalogIsSortedAndSkipsForeignObjects(): void {
 		$map = $this->createMock(IClassMap::class);
 		$map->method('getInstancesByInterface')->willReturn([
-			new \Base3\Usermanager\Criterion\Base3UserIdCriterion(),
+			new \Base3\Core\Usermanager\Criterion\Base3UserIdCriterion(),
 			new \stdClass(),
 			new Base3EmailDomainCriterion()
 		]);
@@ -72,8 +87,8 @@ final class Base3IliasAudienceEditorTest extends TestCase {
 	public function testDuplicateDiscoveredCriterionIsRejected(): void {
 		$map = $this->createMock(IClassMap::class);
 		$map->method('getInstancesByInterface')->willReturn([
-			new \Base3\Usermanager\Criterion\Base3UserIdCriterion(),
-			new \Base3\Usermanager\Criterion\Base3UserIdCriterion()
+			new \Base3\Core\Usermanager\Criterion\Base3UserIdCriterion(),
+			new \Base3\Core\Usermanager\Criterion\Base3UserIdCriterion()
 		]);
 		$rbac = $this->createMock(\ilRbacReview::class);
 		$editor = new Base3IliasAudienceEditor($map, new UserCriterionEvaluator($map), $rbac);

@@ -1,43 +1,58 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Accesscontrol\Api\IAccesscontrol;
-use Base3\Api\IAssetResolver;
-use Base3\Api\IClassMap;
-use Base3\Api\IContainer;
-use Base3\Api\IMvcView;
-use Base3\Authorization\Api\IAuthorizationAdministrationService;
-use Base3\Authorization\Api\IAuthorizationService;
+
+namespace Base3\Base3Ilias\Test;
+
+use Base3\CoreFoundation\Accesscontrol\Api\IAccesscontrol;
+use Base3\CoreFoundation\Api\IAssetResolver;
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Api\IContainer;
+use Base3\CoreFoundation\Api\IMvcView;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationAdministrationService;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
 use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
-use Base3\Configuration\Api\IConfiguration;
-use Base3\ConfigValue\Api\IConfigValueResolver;
-use Base3\Database\Api\IDatabase;
-use Base3\Logger\Api\ILogger;
-use Base3\Migration\Api\IMigrationRunner;
-use Base3\Session\Api\ISession;
-use Base3\Settings\Api\ISettingsStore;
-use Base3\State\Api\IStateStore;
-use Base3\Translation\Api\ITranslation;
-use Base3\Usermanager\Api\IUsermanager;
-use Base3Ilias\Base3\Base3IliasChatbotConfigService;
-use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
-use Base3Ilias\Base3\Base3IliasFileStorageFactory;
-use Base3Ilias\Base3\Base3IliasFileUploadService;
-use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
-use Base3Ilias\Base3\Base3IliasRichTextEditorDisplay;
-use Base3Ilias\Base3IliasPlugin;
-use Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
-use Base3Ilias\Service\Base3IliasAudienceEditor;
-use Base3Ilias\Service\Base3IliasFeatureConfiguration;
-use Base3Ilias\Service\Base3IliasGroupConfiguration;
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\CoreFoundation\ConfigValue\Api\IConfigValueResolver;
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\CoreFoundation\Migration\Api\IMigrationRunner;
+use Base3\CoreFoundation\Session\Api\ISession;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\CoreFoundation\State\Api\IStateStore;
+use Base3\CoreFoundation\Translation\Api\ITranslation;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
+use Base3\Base3Ilias\Base3\Base3IliasChatbotConfigService;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+use Base3\Base3Ilias\Base3\Base3IliasFileStorageFactory;
+use Base3\Base3Ilias\Base3\Base3IliasFileUploadService;
+use Base3\Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+use Base3\Base3Ilias\Base3\Base3IliasRichTextEditorDisplay;
+use Base3\Base3Ilias\Base3IliasPlugin;
+use Base3\Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
+use Base3\Base3Ilias\Service\Base3IliasAudienceEditor;
+use Base3\Base3Ilias\Service\Base3IliasFeatureConfiguration;
+use Base3\Base3Ilias\Service\Base3IliasGroupConfiguration;
 use ILIAS\DI\Container as IliasContainer;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
-use ResourceFoundation\Api\IFileStorageFactory;
-use ResourceFoundation\Api\IManagedFileStorageService;
-use UiFoundation\Api\IAuthorizationAudienceAdministrationService;
-use UiFoundation\Api\IRichTextEditorDisplay;
+use Base3\ResourceFoundation\Api\IFileStorageFactory;
+use Base3\ResourceFoundation\Api\IManagedFileStorageService;
+use Base3\UiFoundation\Api\IAuthorizationAudienceAdministrationService;
+use Base3\UiFoundation\Api\IRichTextEditorDisplay;
 
 require_once __DIR__ . '/../classes/Base3IliasActivityRepositoryBridge.php';
 

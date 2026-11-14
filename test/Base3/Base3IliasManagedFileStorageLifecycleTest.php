@@ -1,18 +1,33 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Event\Api\IEventManager;
-use Base3\Settings\Api\ISettingsStore;
-use Base3Ilias\Base3\Base3IliasFileStorageStakeholder;
-use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+
+namespace Base3\Base3Ilias\Test\Base3;
+
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\Base3Ilias\Base3\Base3IliasFileStorageStakeholder;
+use Base3\Base3Ilias\Base3\Base3IliasManagedFileStorageService;
 use ILIAS\DI\Container;
 use ILIAS\ResourceStorage\Collection\Collections;
 use ILIAS\ResourceStorage\Identification\ResourceCollectionIdentification;
 use ILIAS\ResourceStorage\Services;
 use PHPUnit\Framework\TestCase;
-use ResourceFoundation\Api\IFileStorageFactory;
-use ResourceFoundation\Event\ManagedFileStorageDeletingEvent;
+use Base3\ResourceFoundation\Api\IFileStorageFactory;
+use Base3\ResourceFoundation\Event\ManagedFileStorageDeletingEvent;
 use RuntimeException;
 
 final class Base3IliasManagedFileStorageLifecycleTest extends TestCase {

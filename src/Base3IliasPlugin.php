@@ -1,68 +1,83 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IAssetResolver;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Api\IAuthorizationAdministrationService;
-use Base3\Usermanager\UserCriterionEvaluator;
-use Base3Ilias\Authorization\Base3IliasAuthorizationService;
-use Base3Ilias\Authorization\Base3IliasAuthorizationAdministrationService;
-use Base3Ilias\Service\Base3IliasGroupConfiguration;
-use Base3Ilias\Service\Base3IliasFeatureConfiguration;
-use Base3Ilias\Service\Base3IliasAudienceEditor;
-use Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
-use UiFoundation\Api\IAuthorizationAudienceAdministrationService;
-use Base3\Api\IClassMap;
-use Base3\Api\IContainer;
-use Base3\Api\IMvcView;
-use Base3\Api\IPlugin;
-use Base3\Api\ISystemService;
-use Base3\Configuration\Api\IConfiguration;
-use Base3\ConfigValue\Api\IConfigValueResolver;
-use Base3\ConfigValue\Resolver\ConfigValueResolver;
-use Base3\Database\Api\IDatabase;
-use Base3\Event\Api\IEventManager;
-use Base3\Logger\Api\ILogger;
-use Base3\Migration\Api\IMigrationRunner;
-use Base3\Migration\Database\DatabaseMigrationRunner;
-use Base3\Accesscontrol\Api\IAccesscontrol;
-use Base3\Accesscontrol\Selected\SelectedAccesscontrol;
-use Base3\Language\Api\ILanguage;
-use Base3\Middleware\Session\SessionMiddleware;
-use Base3\Middleware\Accesscontrol\AccesscontrolMiddleware;
-use Base3\Session\Api\ISession;
-use Base3\Settings\Api\ISettingsStore;
-use Base3\Settings\Database\DatabaseSettingsStore;
-use Base3\State\Api\IStateStore;
-use Base3\Translation\Api\ITranslation;
-use Base3\Usermanager\Api\IUsermanager;
-use Base3\Worker\DelegateWorker;
-use Base3Ilias\Base3\Base3IliasAssetResolver;
-use Base3Ilias\Base3\Base3IliasAuth;
-use Base3Ilias\Base3\Base3IliasConfiguration;
-use Base3Ilias\Base3\Base3IliasFileStorageFactory;
-use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
-use Base3Ilias\Base3\Base3IliasMvcView;
-use Base3Ilias\Base3\Base3IliasFileUploadService;
-use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
-use Base3Ilias\Base3\Base3IliasChatbotConfigService;
-use Base3Ilias\Base3\Base3IliasDatabase;
-use Base3Ilias\Base3\Base3IliasLanguage;
-use Base3Ilias\Base3\Base3IliasLogger;
-use Base3Ilias\Base3\Base3IliasRichTextEditorDisplay;
-use Base3Ilias\Base3\Base3IliasSession;
-use Base3Ilias\Base3\Base3IliasStateStore;
-use Base3Ilias\Base3\Base3IliasTranslation;
-use Base3Ilias\Base3\Base3IliasUsermanager;
+
+namespace Base3\Base3Ilias;
+
+use Base3\CoreFoundation\Api\IAssetResolver;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationAdministrationService;
+use Base3\Core\Usermanager\UserCriterionEvaluator;
+use Base3\Base3Ilias\Authorization\Base3IliasAuthorizationService;
+use Base3\Base3Ilias\Authorization\Base3IliasAuthorizationAdministrationService;
+use Base3\Base3Ilias\Service\Base3IliasGroupConfiguration;
+use Base3\Base3Ilias\Service\Base3IliasFeatureConfiguration;
+use Base3\Base3Ilias\Service\Base3IliasAudienceEditor;
+use Base3\Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
+use Base3\UiFoundation\Api\IAuthorizationAudienceAdministrationService;
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Api\IContainer;
+use Base3\CoreFoundation\Api\IMvcView;
+use Base3\CoreFoundation\Api\IPlugin;
+use Base3\CoreFoundation\Api\ISystemService;
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\CoreFoundation\ConfigValue\Api\IConfigValueResolver;
+use Base3\Core\ConfigValue\Resolver\ConfigValueResolver;
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Logger\Api\ILogger;
+use Base3\CoreFoundation\Migration\Api\IMigrationRunner;
+use Base3\Core\Migration\Database\DatabaseMigrationRunner;
+use Base3\CoreFoundation\Accesscontrol\Api\IAccesscontrol;
+use Base3\Core\Accesscontrol\Selected\SelectedAccesscontrol;
+use Base3\CoreFoundation\Language\Api\ILanguage;
+use Base3\Core\Middleware\Session\SessionMiddleware;
+use Base3\Core\Middleware\Accesscontrol\AccesscontrolMiddleware;
+use Base3\CoreFoundation\Session\Api\ISession;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\Core\Settings\Database\DatabaseSettingsStore;
+use Base3\CoreFoundation\State\Api\IStateStore;
+use Base3\CoreFoundation\Translation\Api\ITranslation;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
+use Base3\Core\Worker\DelegateWorker;
+use Base3\Base3Ilias\Base3\Base3IliasAssetResolver;
+use Base3\Base3Ilias\Base3\Base3IliasAuth;
+use Base3\Base3Ilias\Base3\Base3IliasConfiguration;
+use Base3\Base3Ilias\Base3\Base3IliasFileStorageFactory;
+use Base3\Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+use Base3\Base3Ilias\Base3\Base3IliasMvcView;
+use Base3\Base3Ilias\Base3\Base3IliasFileUploadService;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+use Base3\Base3Ilias\Base3\Base3IliasChatbotConfigService;
+use Base3\Base3Ilias\Base3\Base3IliasDatabase;
+use Base3\Base3Ilias\Base3\Base3IliasLanguage;
+use Base3\Base3Ilias\Base3\Base3IliasLogger;
+use Base3\Base3Ilias\Base3\Base3IliasRichTextEditorDisplay;
+use Base3\Base3Ilias\Base3\Base3IliasSession;
+use Base3\Base3Ilias\Base3\Base3IliasStateStore;
+use Base3\Base3Ilias\Base3\Base3IliasTranslation;
+use Base3\Base3Ilias\Base3\Base3IliasUsermanager;
 use Base3\Base3Ilias\Base3IliasActivityRepositoryBridge;
 use Base3\Base3Ilias\Base3IliasModuleRegistry;
 use ILIAS\DI\Container as IliasContainer;
 use Pimple\Container;
-use ResourceFoundation\Api\IFileStorageFactory;
-use ResourceFoundation\Api\IManagedFileStorageService;
+use Base3\ResourceFoundation\Api\IFileStorageFactory;
+use Base3\ResourceFoundation\Api\IManagedFileStorageService;
 use ReflectionClass;
-use UiFoundation\Api\IRichTextEditorDisplay;
+use Base3\UiFoundation\Api\IRichTextEditorDisplay;
 
 class Base3IliasPlugin implements IPlugin {
 

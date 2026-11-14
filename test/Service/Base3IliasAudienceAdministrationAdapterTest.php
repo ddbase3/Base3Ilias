@@ -1,23 +1,38 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Service;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Settings\Api\ISettingsStore;
-use Base3\Usermanager\Api\IUsermanager;
-use Base3\Usermanager\Group;
-use Base3\Usermanager\UserCriterionEvaluator;
-use Base3\Usermanager\Api\IGroup;
-use Base3\Authorization\Api\IFeature;
-use Base3\Usermanager\Api\IUserCriterion;
-use Base3\Usermanager\Criterion\Base3UserIdCriterion;
-use Base3\Usermanager\Criterion\Base3EmailDomainCriterion;
-use Base3Ilias\Group\Base3IliasAdministrationGroup;
-use Base3Ilias\Group\Base3IliasPresentationGroup;
-use Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
-use Base3Ilias\Service\Base3IliasAudienceEditor;
-use Base3Ilias\Service\Base3IliasFeatureConfiguration;
-use Base3Ilias\Service\Base3IliasGroupConfiguration;
+
+namespace Base3\Base3Ilias\Test\Service;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
+use Base3\CoreFoundation\Usermanager\Group;
+use Base3\Core\Usermanager\UserCriterionEvaluator;
+use Base3\CoreFoundation\Usermanager\Api\IGroup;
+use Base3\CoreFoundation\Authorization\Api\IFeature;
+use Base3\CoreFoundation\Usermanager\Api\IUserCriterion;
+use Base3\Core\Usermanager\Criterion\Base3UserIdCriterion;
+use Base3\Core\Usermanager\Criterion\Base3EmailDomainCriterion;
+use Base3\Base3Ilias\Group\Base3IliasAdministrationGroup;
+use Base3\Base3Ilias\Group\Base3IliasPresentationGroup;
+use Base3\Base3Ilias\Service\Base3IliasAudienceAdministrationAdapter;
+use Base3\Base3Ilias\Service\Base3IliasAudienceEditor;
+use Base3\Base3Ilias\Service\Base3IliasFeatureConfiguration;
+use Base3\Base3Ilias\Service\Base3IliasGroupConfiguration;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;

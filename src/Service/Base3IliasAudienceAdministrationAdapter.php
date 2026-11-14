@@ -1,13 +1,28 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Service;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Authorization\Api\IFeature;
-use Base3\Usermanager\Api\IUsermanager;
+
+namespace Base3\Base3Ilias\Service;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Authorization\Api\IFeature;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
 use InvalidArgumentException;
 use RuntimeException;
-use UiFoundation\Api\IAuthorizationAudienceAdministrationService;
+use Base3\UiFoundation\Api\IAuthorizationAudienceAdministrationService;
 
 /** ILIAS authority adapter; uses the existing group and feature owners, no second persistence. */
 final class Base3IliasAudienceAdministrationAdapter implements IAuthorizationAudienceAdministrationService {

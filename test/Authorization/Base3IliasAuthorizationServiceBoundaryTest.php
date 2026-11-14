@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Authorization;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Authorization\Dto\AuthorizationRequest;
-use Base3\Authorization\Dto\SubjectReference;
-use Base3\Usermanager\Permission;
-use Base3Ilias\Authorization\Base3IliasAuthorizationService;
+
+namespace Base3\Base3Ilias\Test\Authorization;
+
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationRequest;
+use Base3\CoreFoundation\Authorization\Dto\SubjectReference;
+use Base3\CoreFoundation\Usermanager\Permission;
+use Base3\Base3Ilias\Authorization\Base3IliasAuthorizationService;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;

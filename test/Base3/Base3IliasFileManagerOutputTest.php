@@ -1,20 +1,35 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IRequest;
-use Base3\Api\IClassMap;
-use Base3\Authorization\Dto\AuthorizationRequest;
-use Base3\Usermanager\Permission;
-use Base3\Configuration\Api\IConfiguration;
-use Base3\Usermanager\Api\IUsermanager;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Dto\AuthorizationDecision;
-use Chatbot\SettingsTab\ChatbotconfigSettingsTab;
-use UiFoundation\Api\ISettingsTab;
-use Base3Ilias\Base3\Base3IliasChatbotConfigService;
-use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
-use Base3Ilias\Base3\Base3IliasFileManagerOutput;
+
+namespace Base3\Base3Ilias\Test\Base3;
+
+use Base3\CoreFoundation\Api\IRequest;
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationRequest;
+use Base3\CoreFoundation\Usermanager\Permission;
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationDecision;
+use Base3\Chatbot\SettingsTab\ChatbotconfigSettingsTab;
+use Base3\UiFoundation\Api\ISettingsTab;
+use Base3\Base3Ilias\Base3\Base3IliasChatbotConfigService;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerOutput;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 

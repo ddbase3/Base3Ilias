@@ -1,6 +1,21 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
+
+
+namespace Base3\Base3Ilias\Test\Base3;
 
 use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
@@ -13,28 +28,28 @@ final class Base3IliasRuntimeModuleDiscoveryTest extends TestCase {
 	public function testEarlyRuntimeBootFindsModulesInLegacyPluginLib(): void {
 		$result = $this->probeModuleDiscovery('legacy');
 
-		self::assertSame(['Base3Framework', 'Base3Ilias', 'Chatbot'], $result['modules']);
+		self::assertSame(['Base3Ilias', 'Chatbot', 'Core', 'CoreFoundation'], $result['modules']);
 		self::assertSame($result['moduleParent'], $result['base3']);
 		self::assertSame($result['moduleParent'], $result['plugin']);
-		self::assertSame($result['moduleParent'] . 'Base3Framework/', $result['framework']);
+		self::assertSame($result['moduleParent'] . 'Core/', $result['framework']);
 	}
 
 	public function testModernRuntimeStillDiscoversAllComponents(): void {
 		$result = $this->probeModuleDiscovery('modern');
 
-		self::assertSame(['Base3Framework', 'Base3Ilias', 'OtherModule'], $result['modules']);
+		self::assertSame(['Base3Ilias', 'Core', 'CoreFoundation', 'OtherModule'], $result['modules']);
 		self::assertSame($result['moduleParent'], $result['base3']);
 		self::assertSame($result['moduleParent'], $result['plugin']);
-		self::assertSame($result['moduleParent'] . 'Base3Framework/', $result['framework']);
+		self::assertSame($result['moduleParent'] . 'Core/', $result['framework']);
 	}
 
 	public function testNestedComponentLibraryRetainsFullComponentDiscovery(): void {
 		$result = $this->probeModuleDiscovery('nested');
 
-		self::assertSame(['Base3Framework', 'Base3Ilias', 'OtherModule'], $result['modules']);
+		self::assertSame(['Base3Ilias', 'Core', 'CoreFoundation', 'OtherModule'], $result['modules']);
 		self::assertSame($result['moduleParent'], $result['base3']);
 		self::assertSame($result['moduleParent'], $result['plugin']);
-		self::assertSame($result['moduleParent'] . 'Base3Framework/', $result['framework']);
+		self::assertSame($result['moduleParent'] . 'Core/', $result['framework']);
 	}
 
 	private function probeModuleDiscovery(string $layout): array {
@@ -51,7 +66,8 @@ final class Base3IliasRuntimeModuleDiscoveryTest extends TestCase {
 		try {
 			$this->makeDirectory($moduleRoot . '/src/Base3');
 			$this->makeDirectory($moduleRoot . '/classes');
-			$this->makeDirectory($moduleParent . 'Base3Framework');
+			$this->makeDirectory($moduleParent . 'Core');
+			$this->makeDirectory($moduleParent . 'CoreFoundation');
 
 			$this->copyFile(
 				$packageRoot . '/src/Base3/Base3IliasRuntime.php',
@@ -62,13 +78,14 @@ final class Base3IliasRuntimeModuleDiscoveryTest extends TestCase {
 				$moduleRoot . '/classes/Base3IliasModuleRegistry.php'
 			);
 
-			$this->writeManifest($moduleRoot, 'Base3Ilias', 'Base3Ilias');
-			$this->writeManifest($moduleParent . 'Base3Framework', 'Base3Framework', 'Base3');
+			$this->writeManifest($moduleRoot, 'Base3Ilias', 'Base3\\Base3Ilias');
+			$this->writeManifest($moduleParent . 'Core', 'Core', 'Base3\\Core');
+			$this->writeManifest($moduleParent . 'CoreFoundation', 'CoreFoundation', 'Base3\\CoreFoundation');
 
 			if ($layout !== 'legacy') {
-				$this->writeManifest($iliasRoot . '/components/OtherVendor/OtherModule', 'OtherModule', 'OtherModule');
+				$this->writeManifest($iliasRoot . '/components/OtherVendor/OtherModule', 'OtherModule', 'Base3\\OtherModule');
 			} else {
-				$this->writeManifest($moduleParent . 'Chatbot', 'Chatbot', 'Chatbot');
+				$this->writeManifest($moduleParent . 'Chatbot', 'Chatbot', 'Base3\\Chatbot');
 			}
 
 			$this->makeDirectory($iliasRoot);
@@ -81,10 +98,10 @@ final class Base3IliasRuntimeModuleDiscoveryTest extends TestCase {
 <?php declare(strict_types=1);
 require __DIR__ . '/Base3Ilias/classes/Base3IliasModuleRegistry.php';
 require __DIR__ . '/Base3Ilias/src/Base3/Base3IliasRuntime.php';
-$method = new ReflectionMethod(\Base3Ilias\Base3\Base3IliasRuntime::class, 'defineDirectories');
+$method = new ReflectionMethod(\Base3\Base3Ilias\Base3\Base3IliasRuntime::class, 'defineDirectories');
 $method->invoke(null);
 echo json_encode([
-    'modules' => array_keys(\Base3Ilias\Base3\Base3IliasRuntime::getBase3Modules()),
+    'modules' => array_keys(\Base3\Base3Ilias\Base3\Base3IliasRuntime::getBase3Modules()),
     'base3' => DIR_BASE3,
     'plugin' => DIR_PLUGIN,
     'framework' => DIR_FRAMEWORK

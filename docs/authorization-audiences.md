@@ -14,7 +14,7 @@ provides the implementation on top of ILIAS's active `ISettingsStore`.
 ## Groups: code and user-created
 
 Code-owned groups implement `IGroup` and are discovered with `IClassMap`.
-`Base3Framework` owns the immutable `anonymous` and `authenticated` definitions.
+`Core` owns the immutable `anonymous` and `authenticated` definitions.
 `Base3Ilias` defines only the ILIAS-specific groups `administration`,
 `presentation` and `testing`, with editable criteria. The `development` group in
 this ILIAS project is owned by the `QualitusIlias` project plugin. Each logical
@@ -114,4 +114,4 @@ place even if an alternative client calls the endpoint directly.
 The evaluator reuses effective ILIAS roles and a request-local resolved BASE3 group
 list. It neither traverses the ILIAS repository tree nor caches cross-user permission
 decisions. For large native resource lists, continue using the native RBAC/query
-filtering APIs described in `Base3Framework/docs/authorization-adapters.md`.
+filtering APIs described in `authorization-adapters.md`.

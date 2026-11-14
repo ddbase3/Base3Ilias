@@ -1,8 +1,23 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Display;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3Ilias\Display\IliasPermissionDebugDisplay;
+
+namespace Base3\Base3Ilias\Test\Display;
+
+use Base3\Base3Ilias\Display\IliasPermissionDebugDisplay;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -73,7 +88,7 @@ final class IliasPermissionDebugDisplayRoleSelectionTest extends TestCase {
 	}
 
 	public function testTargetSelectionValidatesPositiveNumericRequestValues(): void {
-		$request = $this->createMock(\Base3\Api\IRequest::class);
+		$request = $this->createMock(\Base3\CoreFoundation\Api\IRequest::class);
 		$selected = '15';
 		$request->method('request')->willReturnCallback(static function(string $key, mixed $default = null) use (&$selected): mixed {
 			self::assertSame('base3_target_ref_id', $key);

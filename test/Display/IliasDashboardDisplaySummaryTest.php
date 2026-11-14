@@ -1,8 +1,23 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Display;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3Ilias\Display\IliasDashboardDisplay;
+
+namespace Base3\Base3Ilias\Test\Display;
+
+use Base3\Base3Ilias\Display\IliasDashboardDisplay;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -164,7 +179,7 @@ final class IliasDashboardDisplaySummaryTest extends TestCase {
 	}
 
 	public function testQuickLinksUseTheExistingLinkTargetServiceContract(): void {
-		$linkTarget = $this->createMock(\Base3\LinkTarget\Api\ILinkTargetService::class);
+		$linkTarget = $this->createMock(\Base3\CoreFoundation\LinkTarget\Api\ILinkTargetService::class);
 		$linkTarget->expects(self::exactly(7))->method('getLink')->willReturnCallback(
 			static function(array $target, array $params = []): string {
 				self::assertSame([], $params);

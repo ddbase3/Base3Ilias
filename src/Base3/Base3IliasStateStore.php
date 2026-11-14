@@ -16,10 +16,10 @@
  * https://github.com/ddbase3/Base3Framework
  **********************************************************************/
 
-namespace Base3Ilias\Base3;
+namespace Base3\Base3Ilias\Base3;
 
-use Base3\Database\Api\IDatabase;
-use Base3\State\Api\IStateStore;
+use Base3\CoreFoundation\Database\Api\IDatabase;
+use Base3\CoreFoundation\State\Api\IStateStore;
 
 class Base3IliasStateStore implements IStateStore {
 

@@ -1,16 +1,31 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Authorization;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Authorization\Api\IAuthorizationAdministrationService;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Dto\AuthorizationCapabilities;
-use Base3\Authorization\Dto\AuthorizationGrant;
-use Base3\Authorization\Dto\AuthorizationRequest;
-use Base3\Authorization\Dto\AuthorizationSubject;
-use Base3\Authorization\Dto\ResourceReference;
-use Base3\Authorization\Dto\SubjectReference;
-use Base3\Usermanager\Permission;
+
+namespace Base3\Base3Ilias\Authorization;
+
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationAdministrationService;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationCapabilities;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationGrant;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationRequest;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationSubject;
+use Base3\CoreFoundation\Authorization\Dto\ResourceReference;
+use Base3\CoreFoundation\Authorization\Dto\SubjectReference;
+use Base3\CoreFoundation\Usermanager\Permission;
 use InvalidArgumentException;
 use RuntimeException;
 use ilObject;

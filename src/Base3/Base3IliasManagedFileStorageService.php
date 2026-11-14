@@ -1,16 +1,31 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Event\Api\IEventManager;
-use Base3\Settings\Api\ISettingsStore;
+
+namespace Base3\Base3Ilias\Base3;
+
+use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
 use ILIAS\DI\Container;
 use ILIAS\Filesystem\Stream\Streams;
 use InvalidArgumentException;
-use ResourceFoundation\Api\IFileStorage;
-use ResourceFoundation\Api\IFileStorageFactory;
-use ResourceFoundation\Api\IManagedFileStorageService;
-use ResourceFoundation\Event\ManagedFileStorageDeletingEvent;
+use Base3\ResourceFoundation\Api\IFileStorage;
+use Base3\ResourceFoundation\Api\IFileStorageFactory;
+use Base3\ResourceFoundation\Api\IManagedFileStorageService;
+use Base3\ResourceFoundation\Event\ManagedFileStorageDeletingEvent;
 use RuntimeException;
 use Throwable;
 

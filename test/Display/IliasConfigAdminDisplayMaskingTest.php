@@ -1,10 +1,25 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Display;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3Ilias\Display\IliasConfigAdminDisplay;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Dto\AuthorizationDecision;
+
+namespace Base3\Base3Ilias\Test\Display;
+
+use Base3\Base3Ilias\Display\IliasConfigAdminDisplay;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -77,7 +92,7 @@ final class IliasConfigAdminDisplayMaskingTest extends TestCase {
 		if (!class_exists(\ilIniFile::class)) {
 			self::markTestSkipped('Native ILIAS INI service is unavailable outside ILIAS.');
 		}
-		$view = $this->createMock(\Base3\Api\IMvcView::class);
+		$view = $this->createMock(\Base3\CoreFoundation\Api\IMvcView::class);
 		$view->expects(self::once())->method('setTemplate')->with('Display/IliasConfigAdminDisplay.php');
 		$view->method('getBricks')->willReturnCallback(static fn(string $set): ?array => match ($set) {
 			'base3ilias_common' => ['section_server_title' => 'Common'],

@@ -1,53 +1,60 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
+
+
+namespace Base3\Base3Ilias\Base3;
 
 use Base3\Core\PluginClassMap;
+use RuntimeException;
 
 class Base3IliasClassMap extends PluginClassMap {
 
 	protected function getScanTargets(): array {
-		return [
-			["basedir" => DIR_SRC, "subdir" => "", "subns" => "Base3"]
-		];
+		$targets = [];
+
+		foreach (Base3IliasRuntime::getBase3Modules() as $name => $module) {
+			$namespace = $module['namespace'] ?? null;
+			if (!is_string($namespace) || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*(\\\\[A-Za-z_][A-Za-z0-9_]*)*$/', $namespace)) {
+				throw new RuntimeException('Invalid ILIAS module namespace: ' . $name);
+			}
+
+			$srcPath = Base3IliasRuntime::resolveBase3ModulePath($module) . DIRECTORY_SEPARATOR . 'src';
+			if (!is_dir($srcPath)) continue;
+
+			$targets[] = [
+				'module' => $name,
+				'srcPath' => $srcPath,
+				'namespace' => $namespace
+			];
+		}
+
+		return $targets;
 	}
 
 	public function generate($regenerate = false): void {
-		if (!$regenerate && file_exists($this->classMapFile) && filesize($this->classMapFile) > 0) return;
+		if (!$regenerate && is_file($this->classMapFile) && filesize($this->classMapFile) > 0) return;
 
 		if (!is_writable(DIR_TMP)) die('Directory /tmp has to be writable.');
 
 		$this->map = [];
 
 		foreach ($this->getScanTargets() as $target) {
-			$basedir = $target['basedir'];
-			$subdir = $target['subdir'] ?? '';
-			$subns = $target['subns'] ?? '';
-
-			$apps = isset($target['app'])
-				? [$target['app']]
-				: $this->getEntries($basedir);
-
-			foreach ($apps as $app) {
-				$apppath = $basedir . DIRECTORY_SEPARATOR . $app;
-				if (!empty($subdir)) $apppath .= DIRECTORY_SEPARATOR . $subdir;
-				if (!is_dir($apppath)) continue;
-
-				$classes = [];
-				$this->scanClasses($classes, $basedir, $app, $subdir, $subns);
-				$this->fillClassMap($app, $classes);
-			}
-		}
-
-		foreach (Base3IliasRuntime::getBase3Modules() as $name => $module) {
-			if ($name === 'Base3Framework') continue;
-
-			$srcPath = Base3IliasRuntime::resolveBase3ModulePath($module) . DIRECTORY_SEPARATOR . 'src';
-			if (!is_dir($srcPath)) continue;
-
 			$classes = [];
-			$this->scanModuleClasses($classes, $srcPath, (string) $module['namespace']);
-			$this->fillClassMap($name, $classes);
+			$this->scanModuleClasses($classes, $target['srcPath'], $target['namespace']);
+			$this->fillClassMap($target['module'], $classes);
 		}
 
 		$this->writeClassMap();

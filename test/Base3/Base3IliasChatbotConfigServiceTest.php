@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IDisplay;
-use Base3\Configuration\Api\IConfiguration;
-use Base3Ilias\Base3\Base3IliasChatbotConfigService;
-use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+
+namespace Base3\Base3Ilias\Test\Base3;
+
+use Base3\CoreFoundation\Api\IDisplay;
+use Base3\CoreFoundation\Configuration\Api\IConfiguration;
+use Base3\Base3Ilias\Base3\Base3IliasChatbotConfigService;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerHttpService;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;

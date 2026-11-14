@@ -40,7 +40,8 @@ components/Qualitus/Base3Core/
 ├── Base3Core.php
 ├── resources/
 └── lib/
-    ├── Base3Framework/
+    ├── Core/
+    ├── CoreFoundation/
     ├── Base3Ilias/
     └── ...
 ```
@@ -139,7 +140,7 @@ Every caller and HTTP endpoint must explicitly authorize the search with
 results to a browser. The adapter itself creates no endpoint. The list contains
 personal data, including email addresses; do not publish it anonymously.
 
-No schema migration is required. Install the matching `Base3Framework` update
+No schema migration is required. Install the matching `Core` and `CoreFoundation` update
 that adds `IUsermanager::searchUsers()` before deploying the updated ILIAS
 adapter, and update other host usermanagers before using that framework there.
 
@@ -385,3 +386,15 @@ The ILIAS Tools administration UI uses `ClientStack\Display\SettingsDisplay` wit
 ## Historical migration readiness
 
 The existing migration classes in this plugin now implement the independent `ILegacyDatabaseMigration` marker and declare `down(): void` that throws `MigrationException('Not implemented')`. This is not a working reverse migration. Existing `up()` behavior, migration identities, versions, and providers are unchanged. The BASE3 runner skips only the stored checksum comparison for already-applied marked migrations; unapplied migrations still run forward and are recorded in `base3_migrations`. No database data or historical records are modified by this source update. The marker may be removed after the stored checksum has been deliberately reconciled with the final unmarked source file.
+
+
+### Public BASE3 endpoint on ILIAS 11
+
+`Base3Ilias` contributes `resources/base3.php` as an ILIAS `Endpoint`. The
+standard ILIAS resource build (`composer du`) copies the file to
+`public/base3.php`. As this PHP request starts outside the ordinary ILIAS
+request lifecycle, the endpoint locates the ILIAS root and requires the
+existing `vendor/composer/vendor/autoload.php` before calling
+`Base3IliasRuntime::bootStandaloneAndDispatch(true)`. ILIAS Composer already
+loads BASE3 component `src/` namespaces. No standalone `Base3Framework`
+launcher, additional loader, or alternate classmap is installed.

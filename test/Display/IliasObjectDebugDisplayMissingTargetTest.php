@@ -1,10 +1,25 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Display;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3Ilias\Display\IliasObjectDebugDisplay;
-use Base3\Authorization\Api\IAuthorizationService;
-use Base3\Authorization\Dto\AuthorizationDecision;
+
+namespace Base3\Base3Ilias\Test\Display;
+
+use Base3\Base3Ilias\Display\IliasObjectDebugDisplay;
+use Base3\CoreFoundation\Authorization\Api\IAuthorizationService;
+use Base3\CoreFoundation\Authorization\Dto\AuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
@@ -32,7 +47,7 @@ final class IliasObjectDebugDisplayMissingTargetTest extends TestCase {
 
 
 	public function testTargetSelectionAcceptsOnlyPositiveNumericRequestValues(): void {
-		$request = $this->createMock(\Base3\Api\IRequest::class);
+		$request = $this->createMock(\Base3\CoreFoundation\Api\IRequest::class);
 		$value = '45';
 		$request->method('request')->willReturnCallback(static function(string $key, mixed $default = null) use (&$value): mixed {
 			self::assertSame('base3_object_ref_id', $key);
@@ -58,13 +73,13 @@ final class IliasObjectDebugDisplayMissingTargetTest extends TestCase {
 	}
 
 	public function testMissingTargetIsRenderedWithoutNativeObjectOrTreeLookups(): void {
-		$request = $this->createMock(\Base3\Api\IRequest::class);
+		$request = $this->createMock(\Base3\CoreFoundation\Api\IRequest::class);
 		$request->method('request')->with('base3_object_ref_id')->willReturn(null);
-		$links = $this->createMock(\Base3\LinkTarget\Api\ILinkTargetService::class);
+		$links = $this->createMock(\Base3\CoreFoundation\LinkTarget\Api\ILinkTargetService::class);
 		$links->expects(self::once())->method('getLink')->with([
 			'name' => IliasObjectDebugDisplay::getName(), 'out' => 'html'
 		])->willReturn('/object-debug');
-		$view = $this->createMock(\Base3\Api\IMvcView::class);
+		$view = $this->createMock(\Base3\CoreFoundation\Api\IMvcView::class);
 		$view->expects(self::once())->method('setTemplate')->with('Display/IliasObjectDebugDisplay.php');
 		$view->method('getBricks')->willReturn(null);
 		$view->method('loadTemplate')->willReturn('rendered');

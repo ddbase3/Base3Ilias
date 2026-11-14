@@ -1,6 +1,21 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
+
+
+namespace Base3\Base3Ilias\Base3;
 
 use ILIAS\Filesystem\Stream\FileStream;
 use ILIAS\Filesystem\Stream\Streams;
@@ -10,7 +25,7 @@ use ILIAS\ResourceStorage\Resource\ResourceType;
 use ILIAS\ResourceStorage\Revision\Revision;
 use ILIAS\ResourceStorage\Services;
 use ILIAS\ResourceStorage\Stakeholder\ResourceStakeholder;
-use ResourceFoundation\Api\IFileStorage;
+use Base3\ResourceFoundation\Api\IFileStorage;
 use ZipArchive;
 
 final class Base3IliasFileStorage implements IFileStorage {

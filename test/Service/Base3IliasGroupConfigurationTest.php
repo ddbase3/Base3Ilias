@@ -1,18 +1,33 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Service;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\IClassMap;
-use Base3\Settings\Api\ISettingsStore;
-use Base3\Usermanager\Api\IGroup;
-use Base3\Usermanager\Definition\Base3AnonymousGroup;
-use Base3\Usermanager\Definition\Base3AuthenticatedGroup;
-use Base3\Usermanager\UserCriterionEvaluator;
-use Base3Ilias\Group\Base3IliasAdministrationGroup;
-use Base3Ilias\Group\Base3IliasPresentationGroup;
-use Base3Ilias\Group\Base3IliasTestingGroup;
-use Base3Ilias\Service\Base3IliasFeatureConfiguration;
-use Base3Ilias\Service\Base3IliasGroupConfiguration;
+
+namespace Base3\Base3Ilias\Test\Service;
+
+use Base3\CoreFoundation\Api\IClassMap;
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\CoreFoundation\Usermanager\Api\IGroup;
+use Base3\Core\Usermanager\Definition\Base3AnonymousGroup;
+use Base3\Core\Usermanager\Definition\Base3AuthenticatedGroup;
+use Base3\Core\Usermanager\UserCriterionEvaluator;
+use Base3\Base3Ilias\Group\Base3IliasAdministrationGroup;
+use Base3\Base3Ilias\Group\Base3IliasPresentationGroup;
+use Base3\Base3Ilias\Group\Base3IliasTestingGroup;
+use Base3\Base3Ilias\Service\Base3IliasFeatureConfiguration;
+use Base3\Base3Ilias\Service\Base3IliasGroupConfiguration;
 use PHPUnit\Framework\TestCase;
 
 
@@ -111,8 +126,8 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 		$group = new Base3IliasGroupConfigurationTestFixture1();
 		$map->method('getInstancesByInterface')->willReturn([$group]);
 		$map->method('getInstanceByInterfaceName')->willReturnCallback(static fn(string $api, string $name) => match($name) {
-			'base3useridcriterion' => new \Base3\Usermanager\Criterion\Base3UserIdCriterion(),
-			'base3useridentitycriterion' => new \Base3\Usermanager\Criterion\Base3UserIdentityCriterion(),
+			'base3useridcriterion' => new \Base3\Core\Usermanager\Criterion\Base3UserIdCriterion(),
+			'base3useridentitycriterion' => new \Base3\Core\Usermanager\Criterion\Base3UserIdentityCriterion(),
 			default => null
 		});
 		$config = $this->configuration($store, $map);
@@ -120,13 +135,13 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 		self::assertSame('development', $entry['group']->name);
 		self::assertSame(['developer-login'], $entry['codeCriteria']['config']['usernames']);
 		self::assertSame([84], $entry['configuredCriteria']['config']['user_ids']);
-		$bootstrapUser = new \Base3\Usermanager\User();
+		$bootstrapUser = new \Base3\CoreFoundation\Usermanager\User();
 		$bootstrapUser->id = '4567';
 		$bootstrapUser->userid = 'developer-login';
-		$otherUser = new \Base3\Usermanager\User();
+		$otherUser = new \Base3\CoreFoundation\Usermanager\User();
 		$otherUser->id = '84';
 		$otherUser->userid = 'ordinary-user';
-		$outsider = new \Base3\Usermanager\User();
+		$outsider = new \Base3\CoreFoundation\Usermanager\User();
 		$outsider->id = '95';
 		$outsider->userid = 'outsider';
 		$evaluator = new UserCriterionEvaluator($map);
@@ -395,7 +410,7 @@ final class Base3IliasGroupConfigurationTest extends TestCase {
 		$store->expects(self::never())->method('set');
 		$map = $this->createMock(IClassMap::class);
 		$map->method('getInstancesByInterface')->willReturnCallback(static function(string $interface): array {
-			return $interface === \Base3\Authorization\Api\IFeature::class ? [new Base3IliasFeatureConfigurationTestFixture1()] : [];
+			return $interface === \Base3\CoreFoundation\Authorization\Api\IFeature::class ? [new Base3IliasFeatureConfigurationTestFixture1()] : [];
 		});
 		$this->expectException(\InvalidArgumentException::class);
 		$this->configuration($store, $map)->remove('authenticated');

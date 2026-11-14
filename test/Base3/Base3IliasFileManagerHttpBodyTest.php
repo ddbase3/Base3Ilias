@@ -1,11 +1,26 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Test\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Settings\Api\ISettingsStore;
-use Base3Ilias\Base3\Base3IliasFileManagerHttpService;
-use Base3Ilias\Base3\Base3IliasFileUploadService;
-use Base3Ilias\Base3\Base3IliasManagedFileStorageService;
+
+namespace Base3\Base3Ilias\Test\Base3;
+
+use Base3\CoreFoundation\Settings\Api\ISettingsStore;
+use Base3\Base3Ilias\Base3\Base3IliasFileManagerHttpService;
+use Base3\Base3Ilias\Base3\Base3IliasFileUploadService;
+use Base3\Base3Ilias\Base3\Base3IliasManagedFileStorageService;
 use ILIAS\DI\Container;
 use ILIAS\HTTP\Services;
 use InvalidArgumentException;
@@ -14,8 +29,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
-use ResourceFoundation\Api\IFileStorage;
-use ResourceFoundation\Api\IFileStorageFactory;
+use Base3\ResourceFoundation\Api\IFileStorage;
+use Base3\ResourceFoundation\Api\IFileStorageFactory;
 
 final class Base3IliasFileManagerHttpBodyTest extends TestCase {
 

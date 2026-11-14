@@ -1,16 +1,31 @@
 <?php declare(strict_types=1);
 
-namespace Base3Ilias\Base3;
+/***********************************************************************
+ * This file is part of Base3Ilias for BASE3 Framework.
+ *
+ * Base3Ilias integrates BASE3 with the ILIAS learning platform.
+ * It provides native identity, services, assets and lifecycle adapters.
+ * Application modules use the shared BASE3 Foundation contracts.
+ *
+ * Developed by Daniel Dahme
+ * Licensed under GPL-3.0-or-later
+ * https://www.gnu.org/licenses/gpl-3.0.en.html
+ *
+ * https://base3.de
+ ***********************************************************************/
 
-use Base3\Api\ICheck;
-use Base3\Accesscontrol\Api\IAccesscontrol;
-use Base3\Usermanager\UserCriterionEvaluator;
-use Base3Ilias\Service\Base3IliasGroupConfiguration;
-use Base3\Usermanager\Api\IUsermanager;
-use Base3\Usermanager\Group;
-use Base3\Usermanager\Permission;
-use Base3\Usermanager\Role;
-use Base3\Usermanager\User;
+
+namespace Base3\Base3Ilias\Base3;
+
+use Base3\CoreFoundation\Api\ICheck;
+use Base3\CoreFoundation\Accesscontrol\Api\IAccesscontrol;
+use Base3\Core\Usermanager\UserCriterionEvaluator;
+use Base3\Base3Ilias\Service\Base3IliasGroupConfiguration;
+use Base3\CoreFoundation\Usermanager\Api\IUsermanager;
+use Base3\CoreFoundation\Usermanager\Group;
+use Base3\CoreFoundation\Usermanager\Permission;
+use Base3\CoreFoundation\Usermanager\Role;
+use Base3\CoreFoundation\Usermanager\User;
 use ilDBInterface;
 use ilObject;
 use ilObjUser;
