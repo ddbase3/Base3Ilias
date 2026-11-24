@@ -2,7 +2,7 @@
 	"manifestVersion": 1,
 	"name": "Base3Ilias",
 	"namespace": "Base3\\Base3Ilias",
-	"version": "4.21.0",
+	"version": "5.0.0",
 	"description": "Integration of the BASE3 Ecosystem with ILIAS LMS",
 	"license": "GPL-3.0-or-later",
 	"maintainers": [
@@ -14,9 +14,9 @@
 	],
 	"repository": "https://github.com/ddbase3/Base3Ilias",
 	"dependencies": {
-		"Core": ">=4.10.0",
-		"CoreFoundation": ">=4.10.0",
-		"ResourceFoundation": ">=4.5.0",
-		"UiFoundation": ">=4.3.0"
+		"Core": ">=5.0.0",
+		"CoreFoundation": ">=5.0.0",
+		"ResourceFoundation": ">=5.0.0",
+		"UiFoundation": ">=5.0.0"
 	}
 }
