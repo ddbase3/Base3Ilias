@@ -38,6 +38,7 @@ use Base3\CoreFoundation\ConfigValue\Api\IConfigValueResolver;
 use Base3\Core\ConfigValue\Resolver\ConfigValueResolver;
 use Base3\CoreFoundation\Database\Api\IDatabase;
 use Base3\CoreFoundation\Event\Api\IEventManager;
+use Base3\Core\Event\EventManager;
 use Base3\CoreFoundation\Logger\Api\ILogger;
 use Base3\CoreFoundation\Migration\Api\IMigrationRunner;
 use Base3\Core\Migration\Database\DatabaseMigrationRunner;
@@ -106,6 +107,7 @@ class Base3IliasPlugin implements IPlugin {
 			->set('configuration', IConfiguration::class, IContainer::ALIAS)
 			->set(IStateStore::class, fn($c) => new Base3IliasStateStore($c->get(IDatabase::class)), IContainer::SHARED)
 			->set(ISettingsStore::class, fn($c) => new DatabaseSettingsStore($c->get(IDatabase::class)), IContainer::SHARED | IContainer::NOOVERWRITE)
+			->set(IEventManager::class, fn() => new EventManager(), IContainer::SHARED | IContainer::NOOVERWRITE)
 			->set(
 				IFileStorageFactory::class,
 				fn($c) => new Base3IliasFileStorageFactory($c->get(IliasContainer::class)),
